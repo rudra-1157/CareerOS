@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CareerOS Demo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f5f7fb;color:#172033}.app{display:flex;min-height:100vh}.side{width:235px;background:#101a3b;color:white;padding:24px 15px;position:fixed;inset:0 auto 0 0}.logo{font-size:26px;font-weight:800;margin:0 10px}.tag{font-size:11px;color:#aeb9d8;margin:4px 10px 28px}.nav button{display:block;width:100%;padding:12px 14px;margin:5px 0;border:0;border-radius:10px;background:transparent;color:#dce4ff;text-align:left;cursor:pointer}.nav button.active,.nav button:hover{background:#29396f;color:#fff}.main{margin-left:235px;width:calc(100% - 235px);padding:28px 34px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.top h1{margin:0;font-size:27px}.profile{display:flex;align-items:center;gap:10px}.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#dce5ff;color:#29458e;font-weight:800}.page{display:none}.page.active{display:block}.hero{background:linear-gradient(135deg,#172654,#315bdc);color:white;border-radius:18px;padding:26px;margin-bottom:18px}.hero h2{margin:0 0 8px}.hero p{margin:0;color:#dce5ff}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:#fff;border:1px solid #e6eaf2;border-radius:15px;padding:20px;box-shadow:0 4px 18px rgba(31,45,75,.05)}.metric{font-size:28px;font-weight:800;margin:6px 0}.muted{color:#68738a;font-size:13px}.blue{color:#315bdc}.green{color:#15966b}.orange{color:#c97817}.section{display:flex;justify-content:space-between;align-items:center;margin:26px 0 12px}.section h2{font-size:19px;margin:0}.skills{display:grid;grid-template-columns:1fr 1fr;gap:12px}.skill{padding:14px;background:#f8f9fc;border-radius:11px}.skillhead{display:flex;justify-content:space-between;font-weight:700;font-size:14px}.progress{height:8px;background:#e9edf5;border-radius:10px;overflow:hidden;margin-top:9px}.bar{height:100%;background:#315bdc;border-radius:10px}.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.step{background:#f8f9fc;border:1px solid #e5e9f1;padding:16px;border-radius:12px}.step b{display:block;margin:6px 0}.btn{border:0;background:#315bdc;color:white;border-radius:9px;padding:10px 15px;cursor:pointer}.secondary{background:#edf2ff;color:#315bdc}.mentor{display:grid;grid-template-columns:1fr 1fr;gap:18px}.chat{height:310px;overflow:auto;background:#f7f9fd;border-radius:12px;padding:14px}.msg{max-width:85%;padding:11px 14px;border-radius:12px;margin:9px 0;font-size:14px;line-height:1.45}.ai{background:white;border:1px solid #e4e8f0}.me{background:#315bdc;color:white;margin-left:auto}.input{display:flex;gap:8px;margin-top:12px}.input input{flex:1;padding:12px;border:1px solid #d9deea;border-radius:9px}.badge{display:inline-block;background:#e7f7f0;color:#11825c;padding:5px 9px;border-radius:20px;font-size:12px;font-weight:700}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:13px;border-bottom:1px solid #edf0f5;font-size:14px}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modalbox{background:white;border-radius:16px;padding:24px;width:min(560px,100%)}.close{float:right;border:0;border-radius:50%;width:30px;height:30px;cursor:pointer}
+@media(max-width:900px){.side{width:72px}.logo,.tag,.nav span{display:none}.main{margin-left:72px;width:calc(100% - 72px);padding:20px}.grid{grid-template-columns:1fr 1fr}.skills,.mentor,.timeline{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side"><div class="logo">CareerOS</div><div class="tag">One Journey. First Year → Placement.</div>
+<div class="nav">
+<button class="active" onclick="show('dashboard',this)">🏠 <span>Dashboard</span></button>
+<button onclick="show('mentor',this)">🤖 <span>AI Mentor</span></button>
+<button onclick="show('coding',this)">💻 <span>Coding Arena</span></button>
+<button onclick="show('career',this)">🎯 <span>Career Intelligence</span></button>
+<button onclick="show('passport',this)">🛡️ <span>Skill Passport</span></button>
+<button onclick="show('companies',this)">🏢 <span>Companies</span></button>
+</div></aside>
+<main class="main">
+<div class="top"><div><h1 id="title">Student Dashboard</h1><div class="muted">AI-powered academic & career journey</div></div><div class="profile"><div><b>Rudra Padhy</b><div class="muted">B.Tech CSE • Semester 3</div></div><div class="avatar">RP</div></div></div>
+
+<section id="dashboard" class="page active">
+<div class="hero"><h2>Good morning, Rudra 👋</h2><p>Career goal: <b>AI/ML Engineer</b>. CareerOS has identified 3 priority skills for your next learning cycle.</p></div>
+<div class="grid">
+<div class="card"><div class="muted">Learning XP</div><div class="metric blue">4,250</div><div class="muted">+320 this week</div></div>
+<div class="card"><div class="muted">Skill Confidence</div><div class="metric green">78%</div><div class="muted">Evidence-based profile</div></div>
+<div class="card"><div class="muted">Career Readiness</div><div class="metric orange">72%</div><div class="muted">Target: AI/ML Engineer</div></div>
+<div class="card"><div class="muted">Learning Streak</div><div class="metric">12 🔥</div><div class="muted">days continuous</div></div>
+</div>
+<div class="section"><h2>Skill Progress</h2><button class="btn secondary" onclick="show('passport',document.querySelectorAll('.nav button')[4])">View Passport</button></div>
+<div class="card skills">
+<div class="skill"><div class="skillhead"><span>Python</span><span>88%</span></div><div class="progress"><div class="bar" style="width:88%"></div></div></div>
+<div class="skill"><div class="skillhead"><span>Git & GitHub</span><span>82%</span></div><div class="progress"><div class="bar" style="width:82%"></div></div></div>
+<div class="skill"><div class="skillhead"><span>DSA</span><span>68%</span></div><div class="progress"><div class="bar" style="width:68%"></div></div></div>
+<div class="skill"><div class="skillhead"><span>Machine Learning</span><span>52%</span></div><div class="progress"><div class="bar" style="width:52%"></div></div></div>
+</div>
+<div class="section"><h2>Student Journey</h2></div>
+<div class="timeline"><div class="step">📚<b>Learn</b><span class="muted">Institution resources + AI Mentor</span></div><div class="step">💻<b>Practice</b><span class="muted">Coding challenges & quizzes</span></div><div class="step">🛠️<b>Build</b><span class="muted">Projects & GitHub evidence</span></div><div class="step">🚀<b>Get Ready</b><span class="muted">Verify skills & prepare</span></div></div>
+</section>
+
+<section id="mentor" class="page">
+<div class="hero"><h2>🤖 AI Learning Mentor</h2><p>Demo interface for the RAG-based institutional learning assistant.</p></div>
+<div class="mentor"><div class="card"><h3>Ask CareerOS</h3><div class="chat" id="chat"><div class="msg ai">Hi Rudra! Ask me about your subjects, exam preparation, viva or career skills.</div></div><div class="input"><input id="q" placeholder="Try: Explain RAG in simple terms"><button class="btn" onclick="ask()">Ask</button></div></div>
+<div class="card"><h3>Institution Resources</h3><p>📄 Operating Systems — 8 resources</p><p>📄 Data Structures — 12 resources</p><p>📄 DBMS — 7 resources</p><p>📊 Previous Year Questions — 5 sets</p><p>🧪 Lab Manuals — 10 resources</p><button class="btn secondary" onclick="modal('RAG Demo','In the full system, PDFs/PPTs are chunked, converted to embeddings and stored in a vector database. Relevant chunks are retrieved before the LLM generates an answer.')">How RAG works</button></div></div>
+</section>
+
+<section id="coding" class="page"><div class="hero"><h2>💻 Coding Arena</h2><p>Practice, compete and build evidence of problem-solving ability.</p></div>
+<div class="grid">
+<div class="card"><div class="muted">Today's Challenge</div><h3>Two Sum</h3><span class="badge">Easy • +100 XP</span><p class="muted">Find two indices whose values add up to a target.</p><button class="btn" onclick="modal('Coding Challenge','Demo mode. The full implementation will connect a code editor, test cases, timer and evaluation engine.')">Start Challenge</button></div>
+<div class="card"><div class="muted">Weekly Rank</div><div class="metric">#17</div><p class="muted">Top 8% in your batch</p></div>
+<div class="card"><div class="muted">Friend Challenge</div><h3>Rudra vs Sahil</h3><span class="badge">Starts in 02:14</span><p class="muted">Same problem • Same timer</p><button class="btn secondary" onclick="modal('Friend Challenge','Both participants receive the same problem and time limit. The system compares correctness and efficiency.')">View</button></div>
+<div class="card"><div class="muted">Problems Solved</div><div class="metric green">126</div><p class="muted">34 this month</p></div>
+</div></section>
+
+<section id="career" class="page"><div class="hero"><h2>🎯 Career Intelligence</h2><p>Turn resume, GitHub activity and performance into a personalized action plan.</p></div>
+<div class="grid">
+<div class="card"><h3>📄 Resume Analysis</h3><p class="muted">Skills detected: Python, Git, DSA, React</p><span class="badge">ATS Readiness 84%</span><br><br><button class="btn secondary" onclick="modal('Resume Analysis','Demo result: strong technical section. Suggested improvement: add measurable project outcomes and evidence for Machine Learning skills.')">View Analysis</button></div>
+<div class="card"><h3>🐙 GitHub Intelligence</h3><p class="muted">5 Python repos • 2 React repos • Good documentation</p><span class="badge">Evidence Strength: High</span><br><br><button class="btn secondary" onclick="modal('GitHub Analysis','Demo result: Python has strong project evidence. Machine Learning has limited repository evidence and should be verified through assessment.')">View Analysis</button></div>
+<div class="card"><h3>📊 Skill Gap</h3><p><b>Priority 1:</b> Machine Learning</p><p><b>Priority 2:</b> DSA</p><p><b>Priority 3:</b> SQL</p><button class="btn" onclick="modal('AI Skill Gap','Current vs target for AI/ML Engineer: Python 88/80, DSA 68/80, ML 52/80, SQL 61/70. Focus first on ML and DSA.')">Analyze Gaps</button></div>
+<div class="card"><h3>🗺 Personalized Roadmap</h3><p>1. DSA — 4 weeks</p><p>2. ML — 6 weeks</p><p>3. SQL — 3 weeks</p><p>4. ML Project — 5 weeks</p><button class="btn" onclick="modal('Roadmap','Generated from career goal, current skill profile, identified gaps and learning time.')">View Roadmap</button></div>
+</div></section>
+
+<section id="passport" class="page"><div class="hero"><h2>🛡️ Skill Passport</h2><p>A living, evidence-based profile that grows with the student's journey.</p></div>
+<div class="card"><table class="table"><tr><th>Skill</th><th>Confidence</th><th>Evidence</th><th>Status</th></tr>
+<tr><td>Python</td><td>88%</td><td>Coding • GitHub • Projects</td><td><span class="badge">Verified</span></td></tr>
+<tr><td>Git & GitHub</td><td>82%</td><td>Repositories • Activity</td><td><span class="badge">Verified</span></td></tr>
+<tr><td>DSA</td><td>68%</td><td>Coding Challenges</td><td><span class="badge" style="background:#fff3df;color:#a66512">Developing</span></td></tr>
+<tr><td>Machine Learning</td><td>52%</td><td>Limited project evidence</td><td><span class="badge" style="background:#fff3df;color:#a66512">Needs Work</span></td></tr></table></div>
+<div class="grid" style="margin-top:16px"><div class="card"><div class="muted">Overall Skill Confidence</div><div class="metric green">78%</div></div><div class="card"><div class="muted">Projects</div><div class="metric">4</div></div><div class="card"><div class="muted">Coding Score</div><div class="metric">86%</div></div><div class="card"><div class="muted">Interview Readiness</div><div class="metric">81%</div></div></div></section>
+
+<section id="companies" class="page"><div class="hero"><h2>🏢 Company Dashboard</h2><p>Future module: recruiters discover candidates through evidence-backed profiles.</p></div>
+<div class="card"><h3>Sample Candidate Search</h3><table class="table"><tr><th>Candidate</th><th>Python</th><th>DSA</th><th>Projects</th><th>Readiness</th></tr><tr><td>Rudra Padhy</td><td>88%</td><td>68%</td><td>4</td><td><span class="badge">72%</span></td></tr><tr><td>Sahil Shinde</td><td>84%</td><td>81%</td><td>5</td><td><span class="badge">79%</span></td></tr></table><br><button class="btn" onclick="modal('Recruiter View','In the full version, recruiters can filter students by verified skills, projects and readiness. Student consent and access controls will be applied.')">Explore Demo</button></div></section>
+</main></div>
+
+<div class="modal" id="modal"><div class="modalbox"><button class="close" onclick="closeModal()">×</button><h2 id="mt"></h2><p id="mx" class="muted" style="font-size:15px;line-height:1.6"></p><button class="btn" onclick="closeModal()">Close</button></div></div>
+<script>
+const titles={dashboard:"Student Dashboard",mentor:"AI Learning Mentor",coding:"Coding Arena",career:"Career Intelligence",passport:"Skill Passport",companies:"Company Dashboard"};
+function show(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('title').textContent=titles[id]}
+function ask(){let q=document.getElementById('q'),v=q.value.trim();if(!v)return;let c=document.getElementById('chat');c.innerHTML+=`<div class="msg me">${v}</div>`;let a="CareerOS can answer this using the institution's approved resources. In the full version, RAG will retrieve relevant document chunks before the LLM generates the response.";if(v.toLowerCase().includes('rag'))a="RAG means Retrieval-Augmented Generation. CareerOS retrieves relevant content from uploaded institutional resources and gives that context to the LLM before generating an answer.";if(v.toLowerCase().includes('roadmap'))a="Based on your current profile, CareerOS recommends strengthening DSA, learning Machine Learning and SQL, then building an ML project.";c.innerHTML+=`<div class="msg ai">${a}</div>`;q.value='';c.scrollTop=c.scrollHeight}
+function modal(t,x){document.getElementById('mt').textContent=t;document.getElementById('mx').textContent=x;document.getElementById('modal').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+</script>
+</body></html>
