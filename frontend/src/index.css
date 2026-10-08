@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f5f7fb;
+    color: #172033;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom baseline utility classes matching the original design */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.card-shadow {
+  box-shadow: 0 4px 18px rgba(31, 45, 75, 0.05);
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, #172654, #315bdc);
+}
+
+/* Custom scrollbar for chat */
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: #f1f4fa;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
