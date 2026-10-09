@@ -16,6 +16,8 @@ const routeTitles = {
   '/roadmap': { title: 'Personalized Career Roadmap', subtitle: 'Milestone timeline to bridge skill gaps from 1st year to placement' },
   '/passport': { title: 'Verified Skill Passport', subtitle: 'A living, evidence-based ledger that grows with the student journey' },
   '/projects': { title: 'Capstone Projects & Engineering Artifacts', subtitle: 'Faculty-attested full-stack systems and machine learning pipelines' },
+  '/jobs': { title: 'Opportunity & Placement Portal', subtitle: 'Deterministic skill matching, verified company drives & smart applications' },
+  '/applications': { title: 'My Job Applications', subtitle: 'Track application milestones, recruiter reviews and placement status' },
   '/companies': { title: 'Company & Recruiter Dashboard', subtitle: 'Recruiter discovery through evidence-backed candidate dossiers' },
   '/settings': { title: 'Workspace Settings', subtitle: 'Account preferences, recruiter visibility, and appearance' },
   '/faculty': { title: 'Faculty Command Center', subtitle: 'Academic mentorship, student viva verification & cohort analytics' },
@@ -32,11 +34,12 @@ const TopHeader = () => {
 
   const current = routeTitles[location.pathname] || routeTitles['/dashboard'];
 
-  const displayName = currentUser?.name || studentData?.profile?.name || 'Rudra Padhy';
+  const displayName = currentUser?.name || studentData?.profile?.name || 'Student Account';
   const displaySubtitle = currentUser?.degree 
-    ? `${currentUser.degree} • ${currentUser.semester || currentUser.department || 'Sem 3'}`
-    : `${studentData?.profile?.degree} • ${studentData?.profile?.semester}`;
-  const displayInitials = currentUser?.initials || studentData?.profile?.initials || 'RP';
+    ? `${currentUser.degree}${currentUser.semester ? ` • ${currentUser.semester}` : ''}`
+    : (studentData?.profile?.degree ? `${studentData.profile.degree} • ${studentData.profile.semester || ''}` : 'CareerOS Member');
+  const displayInitials = currentUser?.initials || studentData?.profile?.initials || (currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'CO');
+
 
   const unreadCount = notifications.filter(n => n.unread).length;
 

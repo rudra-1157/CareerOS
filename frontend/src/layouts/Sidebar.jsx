@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 
 const studentNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
+  { path: '/jobs', label: 'Job Portal', icon: '💼' },
+  { path: '/applications', label: 'My Applications', icon: '📑' },
   { path: '/mentor', label: 'AI Mentor', icon: '🤖' },
   { path: '/coding', label: 'Coding Arena', icon: '💻' },
   { path: '/career', label: 'Career Intelligence', icon: '🎯' },
@@ -12,7 +14,7 @@ const studentNavItems = [
   { path: '/roadmap', label: 'Roadmap', icon: '🗺️' },
   { path: '/passport', label: 'Skill Passport', icon: '🛡️' },
   { path: '/projects', label: 'Projects', icon: '🛠️' },
-  { path: '/companies', label: 'Companies', icon: '🏢' },
+  { path: '/companies', label: 'Companies & Talent', icon: '🏢' },
   { path: '/settings', label: 'Settings', icon: '⚙️' }
 ];
 

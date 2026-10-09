@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { careerService } from '../services/api';
+import { useCareer } from '../context/CareerContext';
 import { useModal } from '../context/ModalContext';
 import Card from '../components/common/Card';
 import StatCard from '../components/common/StatCard';
@@ -9,14 +11,32 @@ import ProgressBar from '../components/common/ProgressBar';
 
 const CareerPage = () => {
   const { openModal } = useModal();
+  const { studentData } = useCareer();
   const navigate = useNavigate();
 
-  const skillGaps = [
-    { skill: "Machine Learning (PyTorch)", current: 52, target: 80, gap: "-28%", status: "High Priority" },
-    { skill: "Data Structures & Algorithms", current: 68, target: 80, gap: "-12%", status: "Medium Priority" },
-    { skill: "SQL & Relational DBs", current: 64, target: 75, gap: "-11%", status: "Medium Priority" },
-    { skill: "Python & Core OOP", current: 88, target: 80, gap: "+8%", status: "Target Met" }
-  ];
+  const [intelligence, setIntelligence] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadIntelligence();
+  }, []);
+
+  const loadIntelligence = async () => {
+    try {
+      setLoading(true);
+      const data = await careerService.getIntelligence();
+      setIntelligence(data);
+    } catch {
+      // Fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const targetRole = intelligence?.target_role || studentData?.profile?.target_role || "Not set — update your profile";
+  const resumeScore = intelligence?.resume_score;
+  const githubScore = intelligence?.github_score;
+  const skillGaps = intelligence?.skill_gaps || [];
 
   return (
     <div className="space-y-6">
@@ -25,11 +45,11 @@ const CareerPage = () => {
         <div className="space-y-2 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-[#dce5ff]">
             <span>🎯 Placement Target:</span>
-            <span className="text-white font-bold">AI/ML Engineer</span>
+            <span className="text-white font-bold">{targetRole}</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-white">Career Intelligence Hub</h2>
           <p className="text-sm text-[#dce5ff] leading-relaxed">
-            CareerOS combines your resume ATS parsing, GitHub commit patterns, and lab performance to predict candidate readiness and pinpoint precise skill gaps.
+            CareerOS aggregates your uploaded resume ATS diagnostic, GitHub repository commits, and verified skill passport to compute placement readiness and bridge skill gaps.
           </p>
         </div>
 
@@ -57,31 +77,31 @@ const CareerPage = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Resume ATS Score"
-          value="84%"
-          subtitle="Tier-1 Match Ready"
+          value={resumeScore !== null && resumeScore !== undefined ? `${resumeScore}%` : "—"}
+          subtitle={resumeScore ? "Diagnostic complete" : "Upload your resume"}
           icon="📄"
           color="blue"
           onClick={() => navigate('/resume')}
         />
         <StatCard
           title="GitHub Intelligence"
-          value="88/100"
-          subtitle="Strong Project Evidence"
+          value={githubScore !== null && githubScore !== undefined ? `${githubScore}/100` : "—"}
+          subtitle={githubScore ? "Code evidence synced" : "Sync GitHub profile"}
           icon="🐙"
           color="green"
           onClick={() => navigate('/github')}
         />
         <StatCard
           title="Overall Readiness"
-          value="72%"
-          subtitle="Target: AI/ML Engineer"
+          value={studentData?.stats?.career_readiness || "0%"}
+          subtitle={`Target: ${targetRole}`}
           icon="🎯"
           color="orange"
         />
         <StatCard
           title="Identified Gaps"
-          value="3 Skills"
-          subtitle="Action Plan Ready"
+          value={skillGaps.length > 0 ? `${skillGaps.filter(g => g.status !== 'Target Met').length} Skills` : "—"}
+          subtitle={skillGaps.length > 0 ? "Action plan ready" : "Add target role"}
           icon="📊"
           color="purple"
         />
@@ -94,7 +114,7 @@ const CareerPage = () => {
         <div className="lg:col-span-2 space-y-6">
           <Card
             title="Skill Gap Matrix (Target vs Current Profile)"
-            subtitle="Calculated based on 2,500+ campus hiring rounds for AI/ML Engineer roles"
+            subtitle={`Benchmarked against industry hiring expectations for: ${targetRole}`}
             action={
               <Button
                 variant="primary"
@@ -102,126 +122,158 @@ const CareerPage = () => {
                 onClick={() => navigate('/roadmap')}
                 className="font-bold text-xs"
               >
-                View 6-Month Roadmap →
+                View Career Roadmap →
               </Button>
             }
           >
-            <div className="space-y-4">
-              {skillGaps.map((item, idx) => (
-                <div key={idx} className="p-4 bg-[#f8f9fc] border border-[#e5e9f1] rounded-xl space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <b className="text-sm text-[#172033]">{item.skill}</b>
-                      <Badge variant={item.status === 'High Priority' ? 'danger' : item.status === 'Target Met' ? 'success' : 'warning'}>
-                        {item.status}
-                      </Badge>
+            {skillGaps.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[#94a3b8]">
+                Set your target career role in your Profile to generate your personalized skill gap matrix.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {skillGaps.map((item, idx) => (
+                  <div key={idx} className="p-4 bg-[#f8f9fc] border border-[#e5e9f1] rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <b className="text-sm text-[#172033]">{item.skill}</b>
+                        <Badge variant={item.status === 'High Priority' ? 'danger' : item.status === 'Target Met' ? 'success' : 'warning'}>
+                          {item.status}
+                        </Badge>
+                      </div>
+                      <span className="font-bold text-xs text-[#68738a]">
+                        Current: {item.current}% / Target: {item.target}% ({item.gap})
+                      </span>
                     </div>
-                    <span className="font-bold text-xs text-[#68738a]">
-                      Current: {item.current}% / Target: {item.target}% ({item.gap})
-                    </span>
-                  </div>
 
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[11px] text-[#68738a]">
-                      <span>Current Proficiency</span>
-                      <span>Target Level ({item.target}%)</span>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] text-[#68738a]">
+                        <span>Current Proficiency</span>
+                        <span>Target Level ({item.target}%)</span>
+                      </div>
+                      <ProgressBar
+                        value={item.current}
+                        color={item.current >= item.target ? 'green' : item.current >= 65 ? 'blue' : 'orange'}
+                        size="md"
+                      />
                     </div>
-                    <ProgressBar
-                      value={item.current}
-                      color={item.current >= item.target ? 'green' : item.current >= 65 ? 'blue' : 'orange'}
-                      size="md"
-                    />
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           {/* Core Insights & Strategy */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card title="📄 Resume Insights">
-              <p className="text-xs text-[#475569] leading-relaxed mb-3">
-                Detected strong foundations in Python, Git, and Data Structures.
-              </p>
-              <div className="p-3 bg-[#f8f9fc] rounded-xl text-xs text-[#15966b] font-semibold border border-[#d8e6dc] mb-3">
-                ✓ 84% ATS Score with high technical keyword density
-              </div>
+              {intelligence?.has_resume ? (
+                <>
+                  <p className="text-xs text-[#475569] leading-relaxed mb-3">
+                    Active resume file: <b className="text-[#172033]">{intelligence.resume_name}</b>
+                  </p>
+                  <div className="p-3 bg-[#f8f9fc] rounded-xl text-xs text-[#15966b] font-semibold border border-[#d8e6dc] mb-3">
+                    ✓ {intelligence.resume_score}% ATS score with verified keyword mapping
+                  </div>
+                </>
+              ) : (
+                <div className="py-3 text-xs text-[#68738a] leading-relaxed mb-3">
+                  No resume document uploaded yet. Upload a PDF or DOCX to benchmark against ATS hiring filters.
+                </div>
+              )}
               <Button
                 variant="outline"
                 size="sm"
-                fullWidth
                 onClick={() => navigate('/resume')}
-                className="text-xs font-bold"
+                className="w-full text-xs font-semibold"
               >
-                Open Full Resume Diagnostic
+                Open Resume Analysis →
               </Button>
             </Card>
 
-            <Card title="🐙 GitHub Evidence">
-              <p className="text-xs text-[#475569] leading-relaxed mb-3">
-                5 Python repos, 2 React projects, and high commit consistency.
-              </p>
-              <div className="p-3 bg-[#f8f9fc] rounded-xl text-xs text-[#315bdc] font-semibold border border-[#d2defa] mb-3">
-                ✓ Evidence Strength: High across full-stack repositories
-              </div>
+            <Card title="🐙 GitHub Intelligence">
+              {intelligence?.has_github ? (
+                <>
+                  <p className="text-xs text-[#475569] leading-relaxed mb-3">
+                    Linked GitHub account: <b className="text-[#172033]">@{intelligence.github_username}</b>
+                  </p>
+                  <div className="p-3 bg-[#f8f9fc] rounded-xl text-xs text-[#315bdc] font-semibold border border-[#d8e2fd] mb-3">
+                    ⚡ {intelligence.github_score}/100 code evidence score
+                  </div>
+                </>
+              ) : (
+                <div className="py-3 text-xs text-[#68738a] leading-relaxed mb-3">
+                  No GitHub account connected. Connect your GitHub profile to turn public repositories into hiring proof.
+                </div>
+              )}
               <Button
                 variant="outline"
                 size="sm"
-                fullWidth
                 onClick={() => navigate('/github')}
-                className="text-xs font-bold"
+                className="w-full text-xs font-semibold"
               >
-                Inspect GitHub Intelligence
+                Open GitHub Intelligence →
               </Button>
             </Card>
           </div>
         </div>
 
-        {/* Right Sidebar: Recommended Skill Roadmap Preview */}
+        {/* Right Sidebar: Strategic Action Plan */}
         <div className="space-y-6">
           <Card
-            title="Personalized 4-Phase Roadmap"
-            subtitle="Tailored to bridge your exact gaps"
-            action={
-              <Badge variant="info">AI Generated</Badge>
-            }
+            title="Strategic Action Plan"
+            subtitle="Prioritized recommendations to boost placement readiness"
+            action={<Badge variant="info">AI Guided</Badge>}
           >
             <div className="space-y-3">
-              {[
-                { phase: "Phase 1: DSA Mastery", weeks: "4 weeks", focus: "Graphs & Dynamic Programming" },
-                { phase: "Phase 2: PyTorch & ML Core", weeks: "6 weeks", focus: "Model Training & Evaluation" },
-                { phase: "Phase 3: SQL & Vector DB", weeks: "3 weeks", focus: "Query Optimization & Embeddings" },
-                { phase: "Phase 4: ML Capstone Deploy", weeks: "5 weeks", focus: "FastAPI + Docker Deployment" }
-              ].map((step, idx) => (
-                <div key={idx} className="p-3 bg-[#f8f9fc] rounded-xl border border-[#e5e9f1] text-xs">
-                  <div className="flex justify-between items-center mb-1">
-                    <b className="text-[#172033]">{step.phase}</b>
-                    <span className="text-[10px] font-bold bg-[#edf2ff] text-[#315bdc] px-2 py-0.5 rounded">
-                      {step.weeks}
-                    </span>
-                  </div>
-                  <p className="text-[#68738a] text-[11px]">{step.focus}</p>
+              <div className="p-3 bg-[#f8f9fc] border border-[#e5e9f1] rounded-xl space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-[#172033]">1. Practice Coding Arena</span>
+                  <Badge variant="warning">High Priority</Badge>
                 </div>
-              ))}
-            </div>
+                <p className="text-[11px] text-[#68738a] leading-relaxed">
+                  Solve coding challenges to increase verified problem-solving evidence in your Skill Passport.
+                </p>
+                <button onClick={() => navigate('/coding')} className="text-[11px] font-bold text-[#315bdc] hover:underline pt-1 block">
+                  Go to Arena →
+                </button>
+              </div>
 
-            <div className="mt-4 pt-4 border-t border-[#edf0f5]">
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                onClick={() => navigate('/roadmap')}
-                className="font-bold text-xs"
-              >
-                Explore Interactive Roadmap
-              </Button>
+              <div className="p-3 bg-[#f8f9fc] border border-[#e5e9f1] rounded-xl space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-[#172033]">2. Upload & Parse Resume</span>
+                  <Badge variant="info">Diagnostic</Badge>
+                </div>
+                <p className="text-[11px] text-[#68738a] leading-relaxed">
+                  Upload your latest resume to discover missing skills and improve formatting.
+                </p>
+                <button onClick={() => navigate('/resume')} className="text-[11px] font-bold text-[#315bdc] hover:underline pt-1 block">
+                  Analyze Resume →
+                </button>
+              </div>
+
+              <div className="p-3 bg-[#f8f9fc] border border-[#e5e9f1] rounded-xl space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-[#172033]">3. Build Capstone Projects</span>
+                  <Badge variant="success">Evidence</Badge>
+                </div>
+                <p className="text-[11px] text-[#68738a] leading-relaxed">
+                  Register repository projects for faculty attestation and recruiter discovery dossiers.
+                </p>
+                <button onClick={() => navigate('/projects')} className="text-[11px] font-bold text-[#315bdc] hover:underline pt-1 block">
+                  View Projects →
+                </button>
+              </div>
             </div>
           </Card>
 
-          <Card title="Recruiter Evaluation Standard">
-            <p className="text-xs text-[#475569] leading-relaxed">
-              Tier-1 campus recruiters require at least <b>3 verified project artifacts</b> and <b>75%+ skill confidence</b> in core domain skills before shortlisting for interviews.
+          <Card title="Recruiter Visibility">
+            <p className="text-xs text-[#475569] leading-relaxed mb-3">
+              Your profile is visible to verified campus placement recruiters once you reach at least 70% skill confidence and have at least 1 faculty-verified project.
             </p>
+            <div className="flex items-center justify-between text-xs font-semibold pt-2 border-t border-[#edf0f5]">
+              <span>Placement Status:</span>
+              <span className="text-[#315bdc]">In Progress</span>
+            </div>
           </Card>
         </div>
       </div>

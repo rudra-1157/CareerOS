@@ -7,8 +7,9 @@ const roleMeta = {
     label: 'Student',
     icon: '🎓',
     badge: 'Undergraduate / PG',
+    name: 'Student Demo',
     defaultEmail: 'student@careeros.edu',
-    name: 'Rudra Padhy',
+    defaultPassword: 'password123',
     description: 'Track academic progress, practice in Coding Arena, build Skill Passport & get hired.',
     redirectPath: '/dashboard',
   },
@@ -16,8 +17,9 @@ const roleMeta = {
     label: 'Faculty',
     icon: '👨‍🏫',
     badge: 'Mentor & Evaluator',
+    name: 'Faculty Demo',
     defaultEmail: 'faculty@careeros.edu',
-    name: 'Dr. Arvind Sharma',
+    defaultPassword: 'password123',
     description: 'Evaluate student submissions, review viva exams, monitor batch performance.',
     redirectPath: '/faculty',
   },
@@ -25,8 +27,9 @@ const roleMeta = {
     label: 'Administrator',
     icon: '🛡️',
     badge: 'Institutional Dean',
+    name: 'Admin Demo',
     defaultEmail: 'admin@careeros.edu',
-    name: 'Dr. Neha Varma',
+    defaultPassword: 'password123',
     description: 'Manage departmental analytics, curriculum RAG indexing & placement pipelines.',
     redirectPath: '/admin',
   },
@@ -34,8 +37,8 @@ const roleMeta = {
 
 const LoginPage = () => {
   const [selectedRole, setSelectedRole] = useState('student');
-  const [email, setEmail] = useState('student@careeros.edu');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -56,15 +59,13 @@ const LoginPage = () => {
 
   const handleRoleSelect = (roleKey) => {
     setSelectedRole(roleKey);
-    setEmail(roleMeta[roleKey].defaultEmail);
-    setPassword('password123');
     setErrorMessage('');
   };
 
   const handleDemoFill = (roleKey) => {
     setSelectedRole(roleKey);
     setEmail(roleMeta[roleKey].defaultEmail);
-    setPassword('password123');
+    setPassword(roleMeta[roleKey].defaultPassword);
     setErrorMessage('');
   };
 
@@ -91,9 +92,13 @@ const LoginPage = () => {
     setIsSubmitting(false);
 
     if (result.success) {
-      // Determine destination
-      const destination = location.state?.from?.pathname || roleMeta[selectedRole].redirectPath;
-      navigate(destination, { replace: true });
+      const actualRole = result.user?.role?.toLowerCase();
+      let destination = roleMeta[selectedRole]?.redirectPath || '/dashboard';
+      if (actualRole === 'faculty') destination = '/faculty';
+      else if (actualRole === 'administrator' || actualRole === 'admin') destination = '/admin';
+      else if (actualRole === 'student') destination = '/dashboard';
+
+      navigate(location.state?.from?.pathname || destination, { replace: true });
     } else {
       setErrorMessage(result.error);
     }

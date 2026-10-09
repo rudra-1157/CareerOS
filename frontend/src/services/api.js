@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -31,9 +31,9 @@ export const authService = {
       return response.data;
     } catch {
       return [
-        { role: 'student',  email: 'student@careeros.edu',  password: 'password123', name: 'Student Demo' },
-        { role: 'faculty',  email: 'faculty@careeros.edu',  password: 'password123', name: 'Faculty Demo' },
-        { role: 'admin',    email: 'admin@careeros.edu',    password: 'password123', name: 'Admin Demo' }
+        { role: 'student', email: 'student@careeros.edu', password: 'password123', name: 'Student Demo' },
+        { role: 'faculty', email: 'faculty@careeros.edu', password: 'password123', name: 'Faculty Demo' },
+        { role: 'admin', email: 'admin@careeros.edu', password: 'password123', name: 'Admin Demo' }
       ];
     }
   },
@@ -91,8 +91,26 @@ export const adminService = {
 
 // ─── AI Mentor ────────────────────────────────────────────────────────────────
 export const mentorService = {
-  ask: async (query) => {
-    const response = await apiClient.post('/mentor/chat', { query });
+  ask: async (message, session_id = null) => {
+    const payload = { message };
+    if (session_id) payload.session_id = session_id;
+    const response = await apiClient.post('/mentor/chat', payload);
+    return response.data;
+  },
+  getSessions: async () => {
+    const response = await apiClient.get('/mentor/sessions');
+    return response.data;
+  },
+  createSession: async (title = 'New Conversation') => {
+    const response = await apiClient.post('/mentor/sessions', { title });
+    return response.data;
+  },
+  getSession: async (session_id) => {
+    const response = await apiClient.get(`/mentor/sessions/${session_id}`);
+    return response.data;
+  },
+  deleteSession: async (session_id) => {
+    const response = await apiClient.delete(`/mentor/sessions/${session_id}`);
     return response.data;
   },
   getResources: async () => {
@@ -125,6 +143,14 @@ export const codingService = {
   },
   submitCode: async (payload) => {
     const response = await apiClient.post('/coding/submit', payload);
+    return response.data;
+  },
+  createChallenge: async (payload) => {
+    const response = await apiClient.post('/coding/challenges/create', payload);
+    return response.data;
+  },
+  getSubmissions: async () => {
+    const response = await apiClient.get('/coding/submissions');
     return response.data;
   }
 };
@@ -198,6 +224,77 @@ export const companyService = {
   },
   getStats: async () => {
     const response = await apiClient.get('/company/stats');
+    return response.data;
+  },
+  getJobs: async () => {
+    const response = await apiClient.get('/company/jobs');
+    return response.data;
+  },
+  createJob: async (payload) => {
+    const response = await apiClient.post('/company/jobs', payload);
+    return response.data;
+  },
+  toggleJobStatus: async (jobId) => {
+    const response = await apiClient.post(`/company/jobs/${jobId}/toggle-status`);
+    return response.data;
+  },
+  getJobApplications: async (jobId) => {
+    const response = await apiClient.get(`/company/jobs/${jobId}/applications`);
+    return response.data;
+  },
+  updateApplicationStatus: async (applicationId, payload) => {
+    const response = await apiClient.put(`/company/applications/${applicationId}/status`, payload);
+    return response.data;
+  }
+};
+
+// ─── Job Portal & Opportunities ───────────────────────────────────────────────
+export const jobService = {
+  getDomains: async () => {
+    const response = await apiClient.get('/jobs/domains');
+    return response.data;
+  },
+  getJobs: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.domain && params.domain !== 'All') queryParams.append('domain', params.domain);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.employment_type && params.employment_type !== 'All') queryParams.append('employment_type', params.employment_type);
+    if (params.work_arrangement && params.work_arrangement !== 'All') queryParams.append('work_arrangement', params.work_arrangement);
+    if (params.eligible_only) queryParams.append('eligible_only', 'true');
+    if (params.recommended_only) queryParams.append('recommended_only', 'true');
+    if (params.is_demo !== undefined) queryParams.append('is_demo', params.is_demo);
+
+    const qs = queryParams.toString();
+    const url = qs ? `/jobs?${qs}` : '/jobs';
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+  getJobDetail: async (jobId) => {
+    const response = await apiClient.get(`/jobs/${jobId}`);
+    return response.data;
+  },
+  checkEligibility: async (jobId) => {
+    const response = await apiClient.get(`/jobs/${jobId}/eligibility`);
+    return response.data;
+  },
+  applyToJob: async (jobId) => {
+    const response = await apiClient.post(`/jobs/${jobId}/apply`);
+    return response.data;
+  },
+  getMyApplications: async () => {
+    const response = await apiClient.get('/jobs/applications/me');
+    return response.data;
+  },
+  withdrawApplication: async (applicationId) => {
+    const response = await apiClient.post(`/jobs/applications/${applicationId}/withdraw`);
+    return response.data;
+  },
+  getPreferences: async () => {
+    const response = await apiClient.get('/jobs/preferences');
+    return response.data;
+  },
+  updatePreferences: async (payload) => {
+    const response = await apiClient.put('/jobs/preferences', payload);
     return response.data;
   }
 };

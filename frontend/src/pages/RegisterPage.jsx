@@ -5,7 +5,7 @@ import Button from '../components/common/Button';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { register } = useAuth();
   const [selectedRole, setSelectedRole] = useState('student');
   const [formData, setFormData] = useState({
     name: '',
@@ -53,28 +53,30 @@ const RegisterPage = () => {
     }
 
     setLoading(true);
-    // Simulate instantaneous registration or local auth
-    setTimeout(() => {
-      // Mock log the user in
-      const mockUser = {
-        name: formData.name,
-        email: formData.email,
+    try {
+      const result = await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password.trim(),
         role: selectedRole,
-        university: formData.university,
-        degree: formData.degree,
-        target_role: formData.targetRole,
-        learning_xp: 500,
-        initials: formData.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-      };
-      
-      localStorage.setItem('careeros_token', 'mock_registered_token_' + Date.now());
-      localStorage.setItem('careeros_user', JSON.stringify(mockUser));
-      
+        university: formData.university?.trim() || null,
+        degree: formData.degree?.trim() || null,
+        semester: formData.semester || null,
+        career_goal: formData.targetRole?.trim() || null,
+      });
+
+      if (result.success) {
+        if (selectedRole === 'student') navigate('/dashboard', { replace: true });
+        else if (selectedRole === 'faculty') navigate('/faculty', { replace: true });
+        else navigate('/admin', { replace: true });
+      } else {
+        setError(result.error || 'Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred during registration.');
+    } finally {
       setLoading(false);
-      if (selectedRole === 'student') navigate('/dashboard');
-      else if (selectedRole === 'faculty') navigate('/faculty');
-      else navigate('/admin');
-    }, 600);
+    }
   };
 
   return (

@@ -13,6 +13,8 @@ import GithubPage from './pages/GithubPage';
 import RoadmapPage from './pages/RoadmapPage';
 import PassportPage from './pages/PassportPage';
 import ProjectsPage from './pages/ProjectsPage';
+import JobsPage from './pages/JobsPage';
+import MyApplicationsPage from './pages/MyApplicationsPage';
 import CompanyPage from './pages/CompanyPage';
 import SettingsPage from './pages/SettingsPage';
 import FacultyDashboardPage from './pages/FacultyDashboardPage';
@@ -55,6 +57,24 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="jobs"
+                  element={
+                    <ProtectedRoute allowedRoles={['student', 'faculty', 'admin']}>
+                      <JobsPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="applications"
+                  element={
+                    <ProtectedRoute allowedRoles={['student', 'faculty', 'admin']}>
+                      <MyApplicationsPage />
                     </ProtectedRoute>
                   }
                 />
