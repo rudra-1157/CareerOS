@@ -59,7 +59,7 @@ const TermsPage = () => {
               3. AI Advice & Placement Disclaimers
             </h2>
             <p>
-              CareerOS leverages artificial intelligence (including Google Gemini LLM and applicant tracking heuristics) to offer diagnostic feedback. Users acknowledge that:
+              CareerOS leverages artificial intelligence (including Groq LLM inference and applicant tracking heuristics) to offer diagnostic feedback. Users acknowledge that:
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-xs">
               <li>AI Learning Mentor answers, ATS resume diagnostic percentages, and mock interview suggestions are educational guides intended to support personal preparation.</li>

@@ -729,8 +729,8 @@ const LandingPage = () => {
             </div>
             <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">AI Client</span>
-              <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Google Gemini API</div>
-              <span className="text-[11px] text-slate-500 mt-1 block">RAG Curriculum Retrieval</span>
+              <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Groq Cloud API</div>
+              <span className="text-[11px] text-slate-500 mt-1 block">LLaMA 3.3 70B & RAG</span>
             </div>
             <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Git API</span>

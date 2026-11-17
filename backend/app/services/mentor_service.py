@@ -12,7 +12,8 @@ from app.models.github import GithubProfile
 from app.models.coding import CodingSubmission
 from app.models.roadmap import RoadmapTask
 from app.models.chat import ChatSession, ChatMessage
-from app.ai.gemini_client import gemini_ai
+from app.ai.groq_client import groq_ai
+from app.rag.retriever import rag_retriever
 
 PERSONAL_QUERY_PATTERNS = [
     r"\bwhat should i (learn|do|study|focus)\b",
@@ -235,11 +236,11 @@ class MentorService:
         if not clean_query:
             raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
-        # 1. Error handling: If Gemini API is not configured, do NOT fake responses
-        if not gemini_ai.is_configured():
+        # 1. Error handling: If Groq API is not configured, return descriptive 503
+        if not groq_ai.is_configured():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="AI service is not configured."
+                detail="AI service is not configured. Set GROQ_API_KEY in backend/.env to enable live AI responses."
             )
 
         # 2. Get or create session
@@ -259,9 +260,19 @@ class MentorService:
             db.commit()
             db.refresh(session)
 
-        # 3. Check if user context is relevant
+        # 3. Check if user context and institutional RAG context are relevant
         personalized = is_personalized_query(clean_query)
         user_context = build_user_context(user, db) if personalized else None
+
+        # Retrieve institutional RAG syllabus context if relevant
+        rag_docs = rag_retriever.retrieve(clean_query, top_k=2)
+        rag_context = None
+        if rag_docs:
+            rag_snippets = [
+                f"### {doc.get('title', 'Curriculum Topic')} ({doc.get('topic', 'CS Core')} / {doc.get('category', 'Syllabus')})\n{doc.get('content', '')}"
+                for doc in rag_docs
+            ]
+            rag_context = "=== Institutional Curriculum Reference Materials ===\n" + "\n\n".join(rag_snippets) + "\n================================================="
 
         # 4. Fetch previous conversation turns for multi-turn context
         past_messages = (
@@ -297,6 +308,12 @@ class MentorService:
             "- Provide accurate, pedagogical explanations with practical examples.\n"
         )
 
+        if rag_context:
+            system_instruction += (
+                f"\n\nBelow are verified institutional course syllabus materials directly matching this query. "
+                f"Ground your technical explanation in these curriculum concepts where applicable:\n{rag_context}\n"
+            )
+
         if user_context:
             system_instruction += (
                 f"\n\nBelow is the verified profile context of the student asking this question. "
@@ -304,16 +321,16 @@ class MentorService:
                 f"{user_context}\n"
             )
 
-        # 6. Call real Gemini LLM
+        # 6. Call real Groq LLM
         try:
-            ai_text = gemini_ai.generate_chat_response(
+            ai_text = groq_ai.generate_chat_response(
                 messages=chat_turns,
                 system_instruction=system_instruction
             )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Gemini API error: {str(e)}"
+                detail=f"Groq API error: {str(e)}"
             )
 
         # 7. Persist user message and AI message to database
@@ -346,7 +363,7 @@ class MentorService:
                 "content": ai_msg.content,
                 "created_at": ai_msg.created_at.isoformat() if ai_msg.created_at else datetime.utcnow().isoformat()
             },
-            "context_used": bool(user_context)
+            "context_used": bool(user_context or rag_context)
         }
 
 mentor_service = MentorService()

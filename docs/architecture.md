@@ -14,7 +14,7 @@ graph TD
     C --> G[Institutional RAG Service]
     C --> H[Company Recruiter Portal]
     G --> I[(FAISS / Institutional Vector Docs)]
-    G --> J[Gemini AI LLM]
+    G --> J[Groq Cloud LLM (LLaMA 3.3 70B)]
     D --> K[(PostgreSQL / SQLite Database)]
     E --> K
     F --> K
@@ -32,7 +32,7 @@ graph TD
 ### Backend (`backend/`)
 - **FastAPI**: Asynchronous high-performance REST API.
 - **SQLAlchemy & Pydantic**: Robust ORM models and schema validation.
-- **Gemini AI Integration**: Real-time response generation with context augmentation.
+- **Groq AI Integration**: Real-time LLM inference (llama-3.3-70b-versatile) with context augmentation.
 - **Institutional RAG**: Semantic retrieval of institutional documents and course resources.
 
 ### Database (`database/`)

@@ -7,7 +7,7 @@ from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.services.mentor_service import mentor_service
-from app.ai.gemini_client import gemini_ai
+from app.ai.groq_client import groq_ai
 
 router = APIRouter(prefix="/mentor", tags=["AI Mentor"])
 
@@ -22,15 +22,17 @@ class CreateSessionRequest(BaseModel):
 @router.get("/status")
 @router.get("/ai-status")
 def get_ai_status():
-    configured = gemini_ai.is_configured()
+    configured = groq_ai.is_configured()
+    model = groq_ai.get_model_name()
     return {
         "configured": configured,
-        "model": "gemini-2.5-flash",
+        "provider": "Groq",
+        "model": model,
         "status": "Active" if configured else "Not Configured",
         "message": (
-            "Gemini AI Mentor is active and ready for live conversational guidance."
+            f"Groq AI Mentor ({model}) is active and ready for live conversational guidance."
             if configured
-            else "AI service is not configured. Set GEMINI_API_KEY in backend/.env to enable live AI responses."
+            else "AI service is not configured. Set GROQ_API_KEY in backend/.env to enable live AI responses."
         )
     }
 
@@ -77,7 +79,7 @@ def ask_mentor(
 ):
     """
     Send a message to the AI Mentor.
-    If GEMINI_API_KEY is missing, returns HTTP 503 stating 'AI service is not configured.'
+    If GROQ_API_KEY is missing, returns HTTP 503 stating 'AI service is not configured.'
     """
     query_text = (req.message or req.query or "").strip()
     if not query_text:

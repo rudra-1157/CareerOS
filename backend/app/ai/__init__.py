@@ -1,3 +1,7 @@
-from app.ai.gemini_client import gemini_ai, GeminiAIService
+from app.ai.groq_client import groq_ai, GroqAIService
 
-__all__ = ["gemini_ai", "GeminiAIService"]
+# Backwards compatibility aliases
+gemini_ai = groq_ai
+GeminiAIService = GroqAIService
+
+__all__ = ["groq_ai", "GroqAIService", "gemini_ai", "GeminiAIService"]

@@ -245,8 +245,8 @@ const MentorPage = () => {
       setMessages(prev => [...prev, aiMsg]);
     } catch (err) {
       const detail = err.response?.data?.detail || "Sorry, I encountered an error. Please try again.";
-      const errContent = detail === 'AI service is not configured.'
-        ? "**AI service is not configured.**\n\nPlease verify that `GEMINI_API_KEY` is set in `backend/.env` to enable live LLM responses."
+      const errContent = (detail === 'AI service is not configured.' || detail?.includes('AI service is not configured'))
+        ? "**AI service is not configured.**\n\nPlease verify that `GROQ_API_KEY` is set in `backend/.env` to enable live LLM responses."
         : detail;
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`,
@@ -291,14 +291,14 @@ const MentorPage = () => {
         <div>
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded bg-blue-950/80 border border-blue-800/60 text-xs font-medium text-blue-300 mb-2">
             <span className={`w-1.5 h-1.5 rounded-full ${aiStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-            <span>{aiStatus?.configured ? 'Gemini AI Active' : aiStatus ? 'AI Service Offline' : 'Checking status...'}</span>
+            <span>{aiStatus?.configured ? (aiStatus.provider ? `${aiStatus.provider} Active` : 'Groq AI Active') : aiStatus ? 'AI Service Offline' : 'Checking status...'}</span>
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
             <Compass className="w-5 h-5 text-blue-400" />
             AI Learning Mentor
           </h2>
           <p className="text-xs text-slate-300 mt-1 max-w-xl font-normal leading-relaxed">
-            Institutional syllabus-indexed guidance powered by Google Gemini. Ask questions about core computer science subjects, algorithms, vivas, or placement readiness.
+            Institutional syllabus-indexed guidance powered by Groq (LLaMA 3.3). Ask questions about core computer science subjects, algorithms, vivas, or placement readiness.
           </p>
         </div>
 
@@ -403,7 +403,7 @@ const MentorPage = () => {
             action={
               <div className="flex items-center gap-2">
                 <Badge variant={aiStatus?.configured ? 'success' : 'warning'} size="sm">
-                  {aiStatus?.configured ? 'Gemini Active' : 'Offline'}
+                  {aiStatus?.configured ? (aiStatus.provider ? `${aiStatus.provider} Active` : 'Groq Active') : 'Offline'}
                 </Badge>
                 <Button variant="ghost" size="sm" onClick={startNewConversation}>
                   <Plus className="w-3.5 h-3.5 mr-1" />
@@ -504,7 +504,7 @@ const MentorPage = () => {
 
             {aiStatus && !aiStatus.configured && (
               <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg p-2.5">
-                <strong>AI Service Offline:</strong> Add <code className="bg-amber-100 dark:bg-amber-900/60 px-1 rounded font-mono">GEMINI_API_KEY</code> to <code className="bg-amber-100 dark:bg-amber-900/60 px-1 rounded font-mono">backend/.env</code> to activate live Gemini AI answers.
+                <strong>AI Service Offline:</strong> Add <code className="bg-amber-100 dark:bg-amber-900/60 px-1 rounded font-mono">GROQ_API_KEY</code> to <code className="bg-amber-100 dark:bg-amber-900/60 px-1 rounded font-mono">backend/.env</code> to activate live AI answers.
               </p>
             )}
           </Card>

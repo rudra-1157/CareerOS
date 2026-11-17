@@ -40,7 +40,7 @@ CareerOS/
 │   │   ├── schemas/              # Pydantic validation schemas
 │   │   ├── routers/              # API Endpoints (student, mentor, coding, career, passport, company)
 │   │   ├── services/             # Core business logic services
-│   │   ├── ai/                   # Gemini AI LLM client
+│   │   ├── ai/                   # Groq Cloud AI LLM client
 │   │   ├── rag/                  # Institutional RAG Retriever engine
 │   │   └── utils/                # JWT Auth & utility functions
 │   ├── requirements.txt
@@ -98,7 +98,7 @@ npm run dev
 
 ## 💎 Features Preserved & Enhanced
 1. **Student Dashboard**: Real-time stats (Learning XP, Skill Confidence, Career Readiness, Streak), skill progress bars, and the full 4-stage student journey.
-2. **AI Learning Mentor**: Interactive multi-turn chat assistant powered by Gemini and Institutional RAG, alongside institutional syllabus resources.
+2. **AI Learning Mentor**: Interactive multi-turn chat assistant powered by Groq (LLaMA 3.3 70B) and Institutional RAG, alongside institutional syllabus resources.
 3. **Coding Arena**: Daily coding challenges (Two Sum), leaderboard batch rank, friend challenges, and XP tracking.
 4. **Career Intelligence**: ATS resume analyzer, GitHub project evidence strength evaluator, AI skill gap identifier, and custom weekly roadmap.
 5. **Skill Passport**: Evidence-backed verified skills matrix with confidence ratings and portfolio metrics.

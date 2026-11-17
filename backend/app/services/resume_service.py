@@ -6,7 +6,7 @@ from app.models.resume import Resume
 from app.models.github import GitHubProfile
 from app.models.skill import Skill
 from app.models.roadmap import RoadmapTask
-from app.ai.gemini_client import gemini_ai
+from app.ai.groq_client import groq_ai
 
 async def sync_github_profile(username: str, user: User, db: Session) -> Dict[str, Any]:
     username = username.strip().lstrip("@")
@@ -110,7 +110,7 @@ async def sync_github_profile(username: str, user: User, db: Session) -> Dict[st
             }
 
 def process_resume_analysis(file_name: str, file_text: str, user: User, db: Session) -> Dict[str, Any]:
-    analysis = gemini_ai.analyze_resume_text(file_text, user.target_role or "AI/ML Engineer")
+    analysis = groq_ai.analyze_resume_text(file_text, user.target_role or "AI/ML Engineer")
 
     resume_record = db.query(Resume).filter(Resume.user_id == user.id).first()
     if not resume_record:

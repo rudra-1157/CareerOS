@@ -59,7 +59,7 @@ const PrivacyPolicyPage = () => {
               <li>To compute evidence-based skill confidence ratings and placement readiness scores.</li>
               <li>To benchmark resume content against industry applicant tracking system (ATS) filters.</li>
               <li>To generate semester-wise, personalized learning roadmaps based on identified skill gaps.</li>
-              <li>To power conversational syllabus assistance and mock interview question generation via Google Gemini API.</li>
+              <li>To power conversational syllabus assistance and mock interview question generation via Groq Cloud API.</li>
               <li>To enable verified campus recruiters to view candidate dossiers solely when the student enables Recruiter Visibility in workspace settings.</li>
             </ul>
           </section>
