@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from app.database import get_db
-from app.utils.auth import get_current_user
+from app.dependencies.auth import get_current_user, require_student
 from app.models.user import User
 from app.models.resume import Resume
 from app.models.github import GitHubProfile

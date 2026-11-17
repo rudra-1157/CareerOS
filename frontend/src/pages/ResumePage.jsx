@@ -1,211 +1,263 @@
-import React, { useState } from 'react';
-import { initialResumeData } from '../data/initialData';
+import React, { useState, useEffect } from 'react';
+import {
+  FileText,
+  UploadCloud,
+  CheckCircle2,
+  AlertCircle,
+  Target,
+  Search,
+  Layout,
+  FileCode,
+  Lightbulb,
+  Award,
+  ChevronRight,
+  ShieldCheck,
+  X
+} from 'lucide-react';
+import { careerService } from '../services/api';
+import { useCareer } from '../context/CareerContext';
 import { useModal } from '../context/ModalContext';
 import Card from '../components/common/Card';
 import StatCard from '../components/common/StatCard';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
-import ProgressBar from '../components/common/ProgressBar';
 import Toast from '../components/common/Toast';
+import EmptyState from '../components/common/EmptyState';
 
 const ResumePage = () => {
+  const { refreshStudentData } = useCareer();
   const { openModal } = useModal();
-  const [resumeData, setResumeData] = useState(initialResumeData);
+  const [resumeData, setResumeData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
 
-  const handleSimulatedUpload = (e) => {
+  useEffect(() => {
+    loadResume();
+  }, []);
+
+  const loadResume = async () => {
+    try {
+      setLoading(true);
+      const res = await careerService.getResume();
+      if (res && res.uploaded && res.resume) {
+        setResumeData(res.resume);
+      } else {
+        setResumeData(null);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
-    setTimeout(() => {
-      setIsUploading(false);
-      setResumeData(prev => ({
-        ...prev,
-        fileName: file.name,
-        atsScore: 89,
-        matchRating: "High Match (Target: AI/ML Engineer)",
-        parsedAt: "Just now"
-      }));
+    try {
+      const res = await careerService.uploadResume(file);
+      if (res && res.data) {
+        setResumeData(res.data);
+        setToastMessage(`Resume "${file.name}" parsed successfully. ATS score: ${res.data.ats_score}%.`);
+        setToastType('success');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3500);
+        if (refreshStudentData) refreshStudentData();
+      }
+    } catch (err) {
+      setToastMessage(err.response?.data?.detail || "Failed to upload and parse resume.");
+      setToastType('error');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    }, 1200);
+      setTimeout(() => setShowToast(false), 3500);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <Toast
         show={showToast}
-        message="Resume parsed successfully! ATS score updated to 89%."
-        type="success"
+        message={toastMessage}
+        type={toastType}
         onClose={() => setShowToast(false)}
       />
 
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-[#101a3b] via-[#172654] to-[#315bdc] text-white rounded-2xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      {/* ─── Hero Banner ─────────────────────────────────────────────────── */}
+      <div className="bg-slate-900 dark:bg-slate-900 border border-slate-800 text-white rounded-xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-[#dce5ff]">
-            <span>📄 ATS Intelligence</span>
-            <span className="text-white font-bold">{resumeData.matchRating}</span>
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-blue-950/80 border border-blue-800/60 text-xs font-medium text-blue-300">
+            <FileText className="w-3.5 h-3.5 text-blue-400" />
+            <span>ATS Diagnostic Engine</span>
+            <span className="text-slate-400">•</span>
+            <span>{resumeData ? (resumeData.match_rating || resumeData.matchRating) : "No Resume Configured"}</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white">AI Resume Analysis & ATS Diagnostic</h2>
-          <p className="text-sm text-[#dce5ff] leading-relaxed">
-            Upload your resume PDF to benchmark formatting, keyword density, and domain relevance against real campus hiring algorithms.
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+            AI Resume Analysis & ATS Diagnostic
+          </h2>
+          <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-normal">
+            Upload your resume document (PDF, DOCX, or TXT) to benchmark keyword density, layout compliance, and competency alignment against campus hiring algorithms.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           <label className="cursor-pointer">
             <input
               type="file"
-              accept=".pdf,.docx"
-              onChange={handleSimulatedUpload}
+              accept=".pdf,.docx,.txt"
+              onChange={handleFileUpload}
+              disabled={isUploading}
               className="hidden"
             />
-            <span className="inline-flex items-center justify-center font-bold text-sm bg-white text-[#101a3b] hover:bg-[#edf2ff] px-5 py-2.5 rounded-xl shadow-sm transition-all">
-              {isUploading ? 'Parsing Resume...' : '📤 Upload New Resume'}
+            <span className="inline-flex items-center justify-center font-semibold text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer gap-2">
+              <UploadCloud className="w-4 h-4" />
+              {isUploading ? 'Analyzing Document...' : 'Upload Resume File'}
             </span>
           </label>
         </div>
       </div>
 
-      {/* Score Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Overall ATS Score"
-          value={`${resumeData.atsScore}%`}
-          subtitle="Tier-1 Placement Ready"
-          icon="🎯"
-          color="green"
-        />
-        <StatCard
-          title="Detected Skills"
-          value={resumeData.detectedSkills.filter(s => s.match).length}
-          subtitle="7 Matched / 2 Missing"
-          icon="🔍"
-          color="blue"
-        />
-        <StatCard
-          title="Format Compliance"
-          value="95%"
-          subtitle="Standard Single-Column"
-          icon="📐"
-          color="purple"
-        />
-        <StatCard
-          title="Active Document"
-          value="1 File"
-          subtitle={resumeData.fileName}
-          icon="📄"
-          color="neutral"
-        />
-      </div>
-
-      {/* Main Grid: Parsed Breakdown vs Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left 2 Cols: Parsed Skills & Strengths/Weaknesses */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Parsed Skills Keyword Matrix */}
-          <Card
-            title="Extracted Skills & Keyword Matching"
-            subtitle="Comparing resume tokens with AI/ML Engineer job requisitions"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-              {resumeData.detectedSkills.map((skill, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-                    skill.match
-                      ? 'bg-[#e7f7f0] border-[#a3e0c7] text-[#11825c]'
-                      : 'bg-[#fff1f2] border-[#fecdd3] text-[#be123c]'
-                  }`}
-                >
-                  <div>
-                    <b className="block text-xs">{skill.name}</b>
-                    <span className="text-[10px] opacity-80">{skill.category}</span>
-                  </div>
-                  <span className="font-bold text-sm">
-                    {skill.match ? '✓' : '✕'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Strengths & Weaknesses Checklist */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card title="✅ Identified Strengths">
-              <ul className="space-y-2.5 text-xs text-[#334155]">
-                {resumeData.strengths.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2 leading-relaxed">
-                    <span className="text-[#15966b] font-bold">✓</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            <Card title="⚠️ Critical Gaps to Fix">
-              <ul className="space-y-2.5 text-xs text-[#334155]">
-                {resumeData.weaknesses.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2 leading-relaxed">
-                    <span className="text-[#dc2626] font-bold">✕</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+      {!resumeData ? (
+        <Card>
+          <EmptyState
+            icon={FileText}
+            title="No Resume Uploaded Yet"
+            description="Upload your engineering resume to extract technical keywords, identify formatting issues, and receive ATS optimization recommendations."
+            actionText={isUploading ? "Processing Document..." : "Select File for Diagnostic"}
+            onAction={() => document.querySelector('input[type="file"]')?.click()}
+          />
+        </Card>
+      ) : (
+        <>
+          {/* Score Cards Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Overall ATS Score"
+              value={`${resumeData.ats_score || resumeData.atsScore || 0}%`}
+              subtitle={resumeData.match_rating || "Evaluated"}
+              icon={Target}
+              color="emerald"
+            />
+            <StatCard
+              title="Detected Skills"
+              value={Array.isArray(resumeData.detected_skills || resumeData.detectedSkills) ? (resumeData.detected_skills || resumeData.detectedSkills).length : 0}
+              subtitle="Extracted Competencies"
+              icon={Search}
+              color="blue"
+            />
+            <StatCard
+              title="Format Compliance"
+              value="95%"
+              subtitle="Standard Layout"
+              icon={Layout}
+              color="indigo"
+            />
+            <StatCard
+              title="Active Document"
+              value="1 Document"
+              subtitle={resumeData.file_name || resumeData.fileName || "Uploaded Resume"}
+              icon={FileCode}
+              color="neutral"
+            />
           </div>
-        </div>
 
-        {/* Right Sidebar: Actionable AI Suggestions */}
-        <div className="space-y-6">
-          <Card
-            title="Actionable ATS Suggestions"
-            subtitle="Follow these to reach 90%+ ATS score"
-            action={<Badge variant="info">AI Diagnostics</Badge>}
-          >
-            <div className="space-y-3.5">
-              {resumeData.suggestions.map((sug, idx) => (
-                <div key={idx} className="p-3 bg-[#f8f9fc] border border-[#e5e9f1] rounded-xl space-y-1">
-                  <div className="text-xs font-bold text-[#172033] flex items-center gap-1.5">
-                    <span>💡</span>
-                    <span>{sug.title}</span>
-                  </div>
-                  <p className="text-[11px] text-[#68738a] leading-relaxed">
-                    {sug.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-[#edf0f5]">
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                onClick={() => openModal("Resume Optimization Guide", "Google XYZ Formula:\n'Accomplished [X], as measured by [Y], by doing [Z]'.\n\nExample:\n'Optimized PyTorch vision pipeline inference latency by 45% (down to 22ms) by implementing TensorRT quantization and batched GPU execution.'")}
-                className="font-bold text-xs"
+          {/* Main Grid: Parsed Breakdown vs Recommendations */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left 2 Cols: Parsed Skills & Strengths/Weaknesses */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Parsed Skills Keyword Matrix */}
+              <Card
+                title="Extracted Competencies & Keyword Mapping"
+                subtitle="Comparing document tokens with institutional role benchmarks"
               >
-                Learn Google XYZ Resume Formula
-              </Button>
-            </div>
-          </Card>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {(resumeData.detected_skills || resumeData.detectedSkills || []).map((skill, idx) => {
+                    const skillName = typeof skill === 'string' ? skill : skill.name;
+                    const isMatch = typeof skill === 'object' ? skill.match !== false : true;
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+                          isMatch
+                            ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-red-50/70 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                        }`}
+                      >
+                        <div>
+                          <strong className="block text-xs font-semibold">{skillName}</strong>
+                          <span className="text-[10px] opacity-75">{typeof skill === 'object' ? skill.category : 'Detected'}</span>
+                        </div>
+                        {isMatch ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <X className="w-3.5 h-3.5 text-red-600 shrink-0" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
 
-          <Card title="Current Resume File">
-            <div className="flex items-center gap-3 p-3 bg-[#f8f9fc] rounded-xl border border-[#e5e9f1]">
-              <span className="text-2xl">📄</span>
-              <div className="space-y-0.5">
-                <div className="text-xs font-bold text-[#172033]">{resumeData.fileName}</div>
-                <div className="text-[11px] text-[#68738a]">Parsed on {resumeData.parsedAt}</div>
+              {/* Strengths & Weaknesses Checklist */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card title="Identified Strengths">
+                  <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+                    {(resumeData.strengths || []).map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+
+                <Card title="Identified Gaps & Optimization Areas">
+                  <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+                    {(resumeData.weaknesses || []).map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
               </div>
             </div>
-          </Card>
-        </div>
-      </div>
+
+            {/* Right Sidebar: Actionable AI Suggestions */}
+            <div className="space-y-6">
+              <Card
+                title="Actionable ATS Recommendations"
+                subtitle="System suggestions to pass candidate screening filters"
+                action={<Badge variant="info" size="sm">Diagnostics</Badge>}
+              >
+                <div className="space-y-3">
+                  {(resumeData.suggestions || []).map((sug, idx) => {
+                    const title = typeof sug === 'string' ? sug : sug.title;
+                    const desc = typeof sug === 'string' ? '' : sug.desc;
+                    return (
+                      <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-lg space-y-1">
+                        <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span>{title}</span>
+                        </div>
+                        {desc && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                            {desc}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

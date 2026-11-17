@@ -4,58 +4,68 @@ const StatCard = ({
   title,
   value,
   subtitle,
-  icon = null,
-  trend = null, // e.g., '+12%', 'up'
-  color = 'blue', // 'blue' | 'green' | 'orange' | 'purple' | 'neutral'
+  icon: Icon = null,
+  trend = null,
+  color = 'blue', // 'blue' | 'emerald' | 'amber' | 'indigo' | 'neutral'
   className = '',
   onClick = null
 }) => {
   const colorMap = {
-    blue: 'text-[#315bdc]',
-    green: 'text-[#15966b]',
-    orange: 'text-[#c97817]',
-    purple: 'text-[#8b5cf6]',
-    neutral: 'text-[#172033]'
+    blue: 'text-blue-600 dark:text-blue-400',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    green: 'text-emerald-600 dark:text-emerald-400',
+    amber: 'text-amber-600 dark:text-amber-400',
+    orange: 'text-amber-600 dark:text-amber-400',
+    indigo: 'text-indigo-600 dark:text-indigo-400',
+    purple: 'text-indigo-600 dark:text-indigo-400',
+    neutral: 'text-slate-900 dark:text-slate-100'
   };
 
   const bgIconMap = {
-    blue: 'bg-[#edf2ff] text-[#315bdc]',
-    green: 'bg-[#e7f7f0] text-[#15966b]',
-    orange: 'bg-[#fff4e6] text-[#c97817]',
-    purple: 'bg-[#f3e8ff] text-[#8b5cf6]',
-    neutral: 'bg-[#f1f4fa] text-[#68738a]'
+    blue: 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/60',
+    emerald: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/60',
+    green: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/60',
+    amber: 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/60',
+    orange: 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/60',
+    indigo: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/60',
+    purple: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/60',
+    neutral: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
   };
 
   return (
     <div
       onClick={onClick}
-      className={`bg-white border border-[#e6eaf2] rounded-2xl p-5 shadow-[0_4px_18px_rgba(31,45,75,0.04)] hover:shadow-[0_6px_20px_rgba(31,45,75,0.07)] hover:border-[#cbd5e6] transition-all duration-200 ${
-        onClick ? 'cursor-pointer' : ''
+      className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-card dark:shadow-card-dark transition-all duration-150 ${
+        onClick ? 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md' : ''
       } ${className}`}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-xs font-semibold uppercase tracking-wider text-[#68738a]">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {title}
-        </div>
-        {icon && (
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${bgIconMap[color] || bgIconMap.blue}`}>
-            {icon}
+        </span>
+        {Icon && (
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${bgIconMap[color] || bgIconMap.blue}`}>
+            {typeof Icon === 'function' || typeof Icon === 'object' ? (
+              React.isValidElement(Icon) ? Icon : <Icon className="w-4 h-4" />
+            ) : (
+              <span className="text-xs">{Icon}</span>
+            )}
           </div>
         )}
       </div>
-      
-      <div className={`text-2xl md:text-3xl font-extrabold tracking-tight my-1 ${colorMap[color] || colorMap.neutral}`}>
+
+      <div className={`text-2xl font-bold tracking-tight mb-1 ${colorMap[color] || colorMap.neutral}`}>
         {value}
       </div>
 
       {(subtitle || trend) && (
-        <div className="flex items-center gap-1.5 text-xs text-[#68738a] mt-1 font-medium">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-normal">
           {trend && (
-            <span className={trend.startsWith('+') || trend.includes('up') ? 'text-[#15966b] font-bold' : 'text-[#dc2626] font-bold'}>
+            <span className={`font-semibold ${trend.startsWith('+') ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
               {trend}
             </span>
           )}
-          <span>{subtitle}</span>
+          <span className="truncate">{subtitle}</span>
         </div>
       )}
     </div>

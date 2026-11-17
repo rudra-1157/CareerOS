@@ -1,4 +1,18 @@
 import React, { useState } from 'react';
+import { 
+  Building2, 
+  ShieldCheck, 
+  Users, 
+  Target, 
+  Briefcase, 
+  Search, 
+  GitCommit, 
+  FileText, 
+  CheckCircle2, 
+  ExternalLink,
+  ChevronRight,
+  Filter
+} from 'lucide-react';
 import { initialCompanyData } from '../data/initialData';
 import { useModal } from '../context/ModalContext';
 import Card from '../components/common/Card';
@@ -38,15 +52,16 @@ const CompanyPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-[#101a3b] via-[#172654] to-[#315bdc] text-white rounded-2xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      {/* Hero Header */}
+      <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 border border-slate-800 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-[#dce5ff]">
-            <span>🏢 Recruiter & Campus Intelligence</span>
-            <span className="text-white font-bold">284 Verified Students</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-xs font-medium text-slate-200">
+            <Building2 className="w-3.5 h-3.5 text-blue-400" />
+            <span>Recruiter & Campus Intelligence</span>
+            <span className="text-white font-semibold">• 284 Verified Students</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white">Talent Discovery & Candidate Dossiers</h2>
-          <p className="text-sm text-[#dce5ff] leading-relaxed">
+          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Talent Discovery & Candidate Dossiers</h1>
+          <p className="text-sm text-slate-300 leading-relaxed">
             Discover pre-vetted campus talent. Filter candidates by verifiable skill confidence, real GitHub code artifacts, and faculty attestations.
           </p>
         </div>
@@ -54,10 +69,11 @@ const CompanyPage = () => {
         <Button
           variant="secondary"
           size="md"
-          onClick={() => openModal("Recruiter Access & Privacy Policy", "In CareerOS, recruiters discover candidate profiles backed by cryptographically signed faculty evaluations and code artifacts. Student consent and institutional placement policies are enforced.")}
-          className="bg-white text-[#101a3b] hover:bg-[#edf2ff] font-bold shadow-sm shrink-0"
+          onClick={() => openModal("Recruiter Access & Verification Standard", "In CareerOS, recruiters discover candidate profiles backed by cryptographically signed faculty evaluations and code artifacts. Student consent and institutional placement policies are enforced.")}
+          className="bg-white text-slate-900 hover:bg-slate-100 font-semibold shadow-sm shrink-0"
         >
-          🛡️ Verified Evaluation Standard
+          <ShieldCheck className="w-4 h-4 mr-1.5" />
+          Evaluation Standard
         </Button>
       </div>
 
@@ -67,28 +83,28 @@ const CompanyPage = () => {
           title="Total Candidates"
           value={stats.totalCandidates || 284}
           subtitle="CSE & IT Departments"
-          icon="👥"
+          icon="Users"
           color="blue"
         />
         <StatCard
           title="Verified Passports"
           value={stats.verifiedCandidates || 196}
           subtitle="Faculty Sign-Off Completed"
-          icon="🛡️"
+          icon="ShieldCheck"
           color="green"
         />
         <StatCard
           title="Average Readiness"
           value={stats.avgReadiness || "76.4%"}
           subtitle="Tier-1 Ready"
-          icon="🎯"
+          icon="Target"
           color="orange"
         />
         <StatCard
           title="Campus Openings"
           value={stats.activeJobOpenings || 18}
           subtitle="Active Placement Drives"
-          icon="💼"
+          icon="Briefcase"
           color="purple"
         />
       </div>
@@ -99,27 +115,29 @@ const CompanyPage = () => {
           
           {/* Search */}
           <div className="flex-1 relative">
-            <span className="absolute left-3.5 top-2.5 text-[#68738a] text-sm">🔍</span>
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search candidate name, role, degree..."
-              className="w-full pl-9 pr-4 py-2 text-sm border border-[#d9deea] rounded-xl focus:outline-none focus:border-[#315bdc]"
+              className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500"
             />
           </div>
 
           {/* Skill Filter Chips */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold text-[#68738a] mr-1">Filter Skill:</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
+              <Filter className="w-3 h-3" /> Filter:
+            </span>
             {['All', 'Python', 'DSA', 'ML', 'React', 'SQL'].map((skill) => (
               <button
                 key={skill}
                 onClick={() => setSelectedSkillFilter(skill)}
-                className={`text-xs px-2.5 py-1 rounded-lg font-bold transition-all ${
+                className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
                   selectedSkillFilter === skill
-                    ? 'bg-[#315bdc] text-white'
-                    : 'bg-[#f1f4fa] text-[#68738a] hover:bg-[#e2e8f0]'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {skill}
@@ -129,11 +147,11 @@ const CompanyPage = () => {
 
           {/* Readiness threshold */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-bold text-[#68738a]">Min Readiness:</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Min Readiness:</span>
             <select
               value={minReadiness}
               onChange={(e) => setMinReadiness(Number(e.target.value))}
-              className="text-xs bg-[#f8f9fc] border border-[#d9deea] rounded-lg px-2 py-1 font-semibold text-[#172033]"
+              className="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600"
             >
               <option value={0}>All Levels</option>
               <option value={70}>70%+ Readiness</option>
@@ -149,7 +167,7 @@ const CompanyPage = () => {
         {filteredCandidates.map((cand) => (
           <Card
             key={cand.id}
-            className="hover:border-[#ccd6e8] transition-all flex flex-col justify-between"
+            className="hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
             padding="p-6"
           >
             <div className="space-y-4">
@@ -160,12 +178,12 @@ const CompanyPage = () => {
                     initials={cand.initials}
                     name={cand.name}
                     size="lg"
-                    className={`${cand.avatarColor || 'bg-blue-600'} text-white font-extrabold`}
+                    className="font-bold text-white bg-slate-900 dark:bg-slate-800 border border-slate-700"
                   />
                   <div>
-                    <h3 className="text-base font-bold text-[#172033] tracking-tight">{cand.name}</h3>
-                    <p className="text-xs font-semibold text-[#315bdc]">{cand.targetRole}</p>
-                    <p className="text-[11px] text-[#68738a]">{cand.degree}</p>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{cand.name}</h3>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">{cand.targetRole}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{cand.degree}</p>
                   </div>
                 </div>
                 <Badge variant={cand.status === 'Available for Internship' ? 'success' : 'info'}>
@@ -174,31 +192,31 @@ const CompanyPage = () => {
               </div>
 
               {/* Metrics Grid */}
-              <div className="grid grid-cols-3 gap-2 p-3 bg-[#f8f9fc] rounded-xl border border-[#edf0f5] text-center">
+              <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
                 <div>
-                  <div className="text-[10px] text-[#68738a] font-bold uppercase">Readiness</div>
-                  <div className="text-sm font-black text-[#15966b]">{cand.readiness}%</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Readiness</div>
+                  <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{cand.readiness}%</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-[#68738a] font-bold uppercase">Coding</div>
-                  <div className="text-sm font-black text-[#315bdc]">{cand.codingScore}</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Coding</div>
+                  <div className="text-sm font-bold text-blue-600 dark:text-blue-400">{cand.codingScore}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-[#68738a] font-bold uppercase">Projects</div>
-                  <div className="text-sm font-black text-[#172033]">{cand.projectsCount}</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Projects</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{cand.projectsCount}</div>
                 </div>
               </div>
 
               {/* Verified Skills */}
               <div>
-                <div className="text-xs font-bold text-[#68738a] uppercase tracking-wider mb-1.5">
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Verified Skill Matrix
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {cand.skills.map((s, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 bg-[#edf2ff] text-[#315bdc] text-[11px] font-semibold rounded-md border border-[#d6e2ff]"
+                      className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium rounded-md border border-slate-200 dark:border-slate-700"
                     >
                       {s.name}: {s.score}
                     </span>
@@ -210,8 +228,9 @@ const CompanyPage = () => {
               {cand.verifiedBadges && (
                 <div className="flex flex-wrap gap-1">
                   {cand.verifiedBadges.map((badge, idx) => (
-                    <span key={idx} className="text-[10px] bg-[#f1f4fa] text-[#475569] px-2 py-0.5 rounded font-medium">
-                      🛡️ {badge}
+                    <span key={idx} className="inline-flex items-center gap-1 text-[11px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 px-2 py-0.5 rounded-md font-medium">
+                      <ShieldCheck className="w-3 h-3 text-blue-500" />
+                      {badge}
                     </span>
                   ))}
                 </div>
@@ -219,17 +238,19 @@ const CompanyPage = () => {
             </div>
 
             {/* Bottom Actions */}
-            <div className="pt-4 mt-4 border-t border-[#edf0f5] flex items-center justify-between">
-              <span className="text-xs text-[#68738a]">
-                🐙 {cand.githubCommits} Commits
+            <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <GitCommit className="w-3.5 h-3.5 text-slate-400" />
+                {cand.githubCommits} Commits
               </span>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={() => handleViewCandidate(cand)}
-                className="text-xs font-bold shadow-sm"
+                className="text-xs"
               >
-                View Full Dossier →
+                View Dossier
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </div>
           </Card>

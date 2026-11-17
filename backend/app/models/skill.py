@@ -1,22 +1,26 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, ForeignKey
 from app.database import Base
 
 class Skill(Base):
     __tablename__ = "skills"
-
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    name = Column(String, nullable=False)
-    category = Column(String, default="Core")
-    percentage = Column(Integer, default=0)
-    confidence = Column(String, default="0%")
-    evidence = Column(String, default="")
-    status = Column(String, default="Developing")  # Verified, Developing, Needs Work
-    level = Column(String, default="Beginner")     # Beginner, Intermediate, Proficient, Advanced
-    verified_by = Column(String, nullable=True)
-    verified_date = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    name = Column(String, index=True, nullable=False)
+    category = Column(String, nullable=True)
+    percentage = Column(Integer, default=50)
+    status = Column(String, default="Developing")
+    evidence = Column(String, nullable=True)
 
-    user = relationship("User", back_populates="skills")
+class StudentSkill(Base):
+    __tablename__ = "student_skills"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("student_profiles.id"))
+    skill_id = Column(Integer, ForeignKey("skills.id"))
+    proficiency = Column(Integer, default=1) # e.g. 1-100
+
+class SkillGap(Base):
+    __tablename__ = "skill_gaps"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("student_profiles.id"))
+    skill_id = Column(Integer, ForeignKey("skills.id"))
+    reason = Column(String, nullable=True)

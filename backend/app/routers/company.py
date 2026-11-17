@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.utils.auth import get_current_user
+from app.dependencies.auth import get_current_user, require_student
 from app.models.user import User
 from app.models.skill import Skill
 from app.models.project import Project

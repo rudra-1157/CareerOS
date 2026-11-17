@@ -35,28 +35,51 @@ export const AuthProvider = ({ children }) => {
       const res = await authService.login({
         email: email.trim(),
         password: password.trim(),
-        role: role.toLowerCase(),
       });
 
-      const { access_token, user } = res;
-      setToken(access_token);
-      setCurrentUser(user);
-
-      // Save to storage
+      const { access_token } = res;
+      
+      // Save token first so the interceptor picks it up for /auth/me
       const storage = rememberMe ? localStorage : sessionStorage;
       const otherStorage = rememberMe ? sessionStorage : localStorage;
       
       otherStorage.removeItem('careeros_token');
       otherStorage.removeItem('careeros_user');
       otherStorage.removeItem('careeros_remember');
-
       storage.setItem('careeros_token', access_token);
+
+      setToken(access_token);
+
+      // Fetch the real user profile from backend
+      const user = await authService.getMe();
+      setCurrentUser(user);
+
       storage.setItem('careeros_user', JSON.stringify(user));
       storage.setItem('careeros_remember', rememberMe ? 'true' : 'false');
 
       return { success: true, user };
     } catch (error) {
       const msg = error.response?.data?.detail || error.message || 'Login failed. Please verify credentials.';
+      return { success: false, error: msg };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (userData) => {
+    setIsLoading(true);
+    try {
+      await authService.register(userData);
+      // Auto-login newly registered account
+      const loginResult = await login({
+        email: userData.email,
+        password: userData.password,
+        role: userData.role || 'student',
+        rememberMe: true,
+      });
+      return loginResult;
+    } catch (error) {
+      const msg = error.response?.data?.detail || error.message || 'Registration failed.';
       return { success: false, error: msg };
     } finally {
       setIsLoading(false);
@@ -75,6 +98,33 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
+  const updateCurrentUser = (updatedFields) => {
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updatedFields };
+      const remember = localStorage.getItem('careeros_remember') === 'true';
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem('careeros_user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const refreshUser = async () => {
+    try {
+      const user = await authService.getMe();
+      if (user) {
+        setCurrentUser(user);
+        const remember = localStorage.getItem('careeros_remember') === 'true';
+        const storage = remember ? localStorage : sessionStorage;
+        storage.setItem('careeros_user', JSON.stringify(user));
+      }
+      return user;
+    } catch (err) {
+      console.warn('Failed to refresh user:', err);
+      return null;
+    }
+  };
+
   const isAuthenticated = Boolean(currentUser && token);
   const userRole = currentUser?.role?.toLowerCase() || null;
 
@@ -88,7 +138,10 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         demoUsers,
         login,
+        register,
         logout,
+        updateCurrentUser,
+        refreshUser,
       }}
     >
       {children}

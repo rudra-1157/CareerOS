@@ -1,51 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import {
+  GraduationCap,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle2,
+  Shield,
+  User,
+  School,
+  X
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/common/Button';
 
 const roleMeta = {
   student: {
     label: 'Student',
-    icon: '🎓',
-    badge: 'Undergraduate / PG',
+    roleTag: 'Undergraduate / PG',
     defaultEmail: 'student@careeros.edu',
-    name: 'Rudra Padhy',
-    description: 'Track academic progress, practice in Coding Arena, build Skill Passport & get hired.',
+    defaultPassword: 'password123',
+    description: 'Track academic progress, practice in Coding Arena, build Skill Passport & prepare for placement drives.',
     redirectPath: '/dashboard',
   },
   faculty: {
     label: 'Faculty',
-    icon: '👨‍🏫',
-    badge: 'Mentor & Evaluator',
+    roleTag: 'Mentor & Evaluator',
     defaultEmail: 'faculty@careeros.edu',
-    name: 'Dr. Arvind Sharma',
-    description: 'Evaluate student submissions, review viva exams, monitor batch performance.',
+    defaultPassword: 'password123',
+    description: 'Review student submissions, evaluate viva assessments, and endorse candidate Skill Passports.',
     redirectPath: '/faculty',
   },
   admin: {
     label: 'Administrator',
-    icon: '🛡️',
-    badge: 'Institutional Dean',
+    roleTag: 'Institutional Lead',
     defaultEmail: 'admin@careeros.edu',
-    name: 'Dr. Neha Varma',
-    description: 'Manage departmental analytics, curriculum RAG indexing & placement pipelines.',
+    defaultPassword: 'password123',
+    description: 'Manage departmental curriculum indexing, institutional analytics, and campus placement pipelines.',
     redirectPath: '/admin',
   },
 };
 
 const LoginPage = () => {
   const [selectedRole, setSelectedRole] = useState('student');
-  const [email, setEmail] = useState('student@careeros.edu');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitted, setForgotSubmitted] = useState(false);
 
   const { login, isAuthenticated, userRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // If already authenticated, redirect to appropriate role dashboard
   useEffect(() => {
     if (isAuthenticated && userRole) {
       if (userRole === 'faculty') navigate('/faculty', { replace: true });
@@ -56,15 +70,13 @@ const LoginPage = () => {
 
   const handleRoleSelect = (roleKey) => {
     setSelectedRole(roleKey);
-    setEmail(roleMeta[roleKey].defaultEmail);
-    setPassword('password123');
     setErrorMessage('');
   };
 
   const handleDemoFill = (roleKey) => {
     setSelectedRole(roleKey);
     setEmail(roleMeta[roleKey].defaultEmail);
-    setPassword('password123');
+    setPassword(roleMeta[roleKey].defaultPassword);
     setErrorMessage('');
   };
 
@@ -73,7 +85,7 @@ const LoginPage = () => {
     setErrorMessage('');
 
     if (!email.trim()) {
-      setErrorMessage('Please enter your institutional email or ID.');
+      setErrorMessage('Please enter your institutional email address.');
       return;
     }
     if (!password) {
@@ -91,219 +103,310 @@ const LoginPage = () => {
     setIsSubmitting(false);
 
     if (result.success) {
-      // Determine destination
-      const destination = location.state?.from?.pathname || roleMeta[selectedRole].redirectPath;
-      navigate(destination, { replace: true });
+      const actualRole = result.user?.role?.toLowerCase();
+      let destination = roleMeta[selectedRole]?.redirectPath || '/dashboard';
+      if (actualRole === 'faculty') destination = '/faculty';
+      else if (actualRole === 'administrator' || actualRole === 'admin') destination = '/admin';
+      else if (actualRole === 'student') destination = '/dashboard';
+
+      const searchParams = new URLSearchParams(location.search);
+      const redirectParam = searchParams.get('redirect');
+      const targetDestination = location.state?.from?.pathname || redirectParam || destination;
+
+      navigate(targetDestination, { replace: true });
     } else {
       setErrorMessage(result.error);
     }
   };
 
+  const handleForgotPasswordSubmit = (e) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setForgotSubmitted(true);
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a1020] text-white flex flex-col justify-center items-center p-4 relative overflow-hidden select-none font-sans">
-      {/* Background ambient glow shapes */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/15 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Brand Header */}
-      <div className="text-center mb-6 relative z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#172554] border border-blue-500/30 text-blue-300 text-xs font-semibold tracking-wide uppercase mb-3 shadow-inner">
-          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-          AI-Powered Career Operating System
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-1">
-          Career<span className="text-blue-400">OS</span>
-        </h1>
-        <p className="text-gray-400 text-sm max-w-sm mx-auto">
-          One Unified Journey: First Year Enrollment → Campus Placement.
-        </p>
-      </div>
-
-      {/* Main Auth Container */}
-      <div className="w-full max-w-[460px] bg-[#111a30]/90 backdrop-blur-xl border border-[#23335c] rounded-2xl p-6 sm:p-8 shadow-2xl relative z-10 transition-all duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 font-sans">
+      
+      {/* Container Box */}
+      <div className="w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
         
-        {/* Role Selector Tabs */}
-        <div className="mb-6">
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
-            Select Your Role
-          </label>
-          <div className="grid grid-cols-3 gap-2 p-1 bg-[#0a1122] rounded-xl border border-[#1e2c4d]">
-            {Object.entries(roleMeta).map(([roleKey, data]) => {
-              const isSelected = selectedRole === roleKey;
-              return (
-                <button
-                  key={roleKey}
-                  type="button"
-                  onClick={() => handleRoleSelect(roleKey)}
-                  className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-lg text-center transition-all duration-200 cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#2563eb] text-white shadow-md font-semibold ring-1 ring-blue-300/40'
-                      : 'text-gray-400 hover:text-white hover:bg-[#162241]'
-                  }`}
-                >
-                  <span className="text-xl mb-1">{data.icon}</span>
-                  <span className="text-xs">{data.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Role Description Banner */}
-        <div className="bg-[#172344]/60 border border-[#233560] rounded-lg p-2.5 mb-5 text-xs text-blue-200/90 flex items-center gap-2.5">
-          <span className="text-lg">{roleMeta[selectedRole].icon}</span>
+        {/* Left Side: Brand & Product Value */}
+        <div className="lg:col-span-5 bg-slate-900 text-white p-6 sm:p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
           <div>
-            <div className="font-semibold text-white">
-              {roleMeta[selectedRole].label} Portal
-            </div>
-            <div className="text-[11px] text-gray-400">
-              {roleMeta[selectedRole].description}
-            </div>
-          </div>
-        </div>
-
-        {/* Error Notification Alert */}
-        {errorMessage && (
-          <div className="mb-4 p-3 bg-red-950/80 border border-red-500/50 rounded-xl text-red-200 text-xs flex items-start gap-2.5 animate-shake">
-            <span className="text-base text-red-400">⚠️</span>
-            <div className="flex-1 leading-relaxed">
-              <strong className="block text-red-300 font-semibold mb-0.5">Authentication Error</strong>
-              {errorMessage}
-            </div>
-          </div>
-        )}
-
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-              Email / Institutional ID
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={roleMeta[selectedRole].defaultEmail}
-                className="w-full bg-[#0a1122] border border-[#23335c] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition-colors"
-              />
-              <span className="absolute right-3.5 top-2.5 text-gray-400 text-sm pointer-events-none">
-                ✉️
+            <Link to="/" className="inline-flex items-center gap-2.5 mb-6 group">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <span className="text-xl font-bold tracking-tight text-white">
+                Career<span className="text-blue-400">OS</span>
               </span>
+            </Link>
+
+            <div className="space-y-2 mb-6">
+              <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-semibold bg-blue-950 text-blue-300 border border-blue-900">
+                MIT-ADT University • CSE
+              </span>
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
+                One Platform. One Journey.
+              </h2>
+              <p className="text-xs text-slate-300 leading-relaxed font-normal">
+                Continuous career development connecting foundational coursework, coding benchmarks, GitHub evidence, and campus placement preparation.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-slate-800 text-xs text-slate-300">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <span>AI Learning Mentor for university syllabus & viva</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <span>Algorithmic coding arena with test case validation</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <span>Verified Skill Passport for campus recruiters</span>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-[#0a1122] border border-[#23335c] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition-colors pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-white text-sm transition-colors cursor-pointer"
-                title={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? '👁️' : '🔒'}
-              </button>
-            </div>
-          </div>
-
-          {/* Remember Me & Assistance */}
-          <div className="flex items-center justify-between text-xs pt-1">
-            <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded border-[#23335c] bg-[#0a1122] text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
-              />
-              <span>Remember session</span>
-            </label>
-            <span className="text-gray-400 hover:text-blue-400 cursor-pointer transition-colors">
-              Institutional SSO
+          {/* Evaluator Demo Quick Access */}
+          <div className="pt-6 mt-6 border-t border-slate-800">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+              Evaluator Demo Accounts:
             </span>
+            <div className="grid grid-cols-3 gap-1.5">
+              {Object.keys(roleMeta).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleDemoFill(key)}
+                  className="px-2 py-1.5 text-center rounded bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-[11px] font-medium text-slate-200 transition-colors"
+                >
+                  {roleMeta[key].label}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
 
-          {/* Submit Button with Loading State */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full py-2.5 px-4 mt-2 rounded-xl text-sm font-semibold tracking-wide text-white transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-              isSubmitting
-                ? 'bg-blue-600/70 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-500 active:scale-[0.99] shadow-lg shadow-blue-600/20'
-            }`}
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                <span>Authenticating with JWT...</span>
-              </>
-            ) : (
-              <>
-                <span>Sign in as {roleMeta[selectedRole].label}</span>
-                <span>→</span>
-              </>
-            )}
-          </button>
-        </form>
+        {/* Right Side: Authentication Form */}
+        <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between">
+          <div>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                Sign in to your account
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Enter your institutional credentials to access your CareerOS workspace.
+              </p>
+            </div>
 
-        {/* Demo Accounts Quick-Select Section */}
-        <div className="mt-6 pt-5 border-t border-[#1c2948]">
-          <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 text-center">
-            One-Click Demo Accounts
-          </div>
-          <div className="grid grid-cols-1 gap-1.5">
-            {Object.entries(roleMeta).map(([roleKey, data]) => (
-              <button
-                key={roleKey}
-                type="button"
-                onClick={() => handleDemoFill(roleKey)}
-                className={`flex items-center justify-between w-full px-3 py-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
-                  selectedRole === roleKey
-                    ? 'bg-[#18264a] border-blue-500/40 text-blue-200'
-                    : 'bg-[#0b1224] border-[#1e2a47] text-gray-400 hover:border-gray-600 hover:text-gray-200'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span>{data.icon}</span>
-                  <span className="font-semibold text-white">{data.name}</span>
-                  <span className="text-[10px] text-gray-400">({data.label})</span>
+            {/* Role Tabs */}
+            <div className="mb-5">
+              <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                Select Portal Role
+              </label>
+              <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700/60">
+                {Object.entries(roleMeta).map(([roleKey, data]) => {
+                  const isSelected = selectedRole === roleKey;
+                  return (
+                    <button
+                      key={roleKey}
+                      type="button"
+                      onClick={() => handleRoleSelect(roleKey)}
+                      className={`py-2 px-3 rounded-md text-xs font-medium text-center transition-colors ${
+                        isSelected
+                          ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-semibold'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {data.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Error Notification Alert */}
+            {errorMessage && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-lg text-red-700 dark:text-red-300 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
+                <div className="flex-1 leading-relaxed">
+                  <strong className="block font-semibold mb-0.5">Authentication Failed</strong>
+                  {errorMessage}
                 </div>
-                <span className="text-[10px] bg-[#1a2544] px-1.5 py-0.5 rounded text-blue-300 font-mono">
-                  Autofill
-                </span>
-              </button>
-            ))}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Institutional Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={roleMeta[selectedRole].defaultEmail}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-9 pr-3.5 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotSubmitted(false);
+                      setShowForgotPasswordModal(true);
+                    }}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-9 pr-10 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-xs text-slate-600 dark:text-slate-400">
+                  Keep me signed in on this workstation
+                </label>
+              </div>
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                fullWidth
+                loading={isSubmitting}
+              >
+                Sign In to {roleMeta[selectedRole].label} Portal
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </form>
+          </div>
+
+          <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              New to CareerOS?{' '}
+              <Link to="/register" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                Create a student account
+              </Link>
+            </p>
           </div>
         </div>
-
-        {/* Register Account Link */}
-        <div className="mt-5 text-center text-xs text-gray-400">
-          New to CareerOS?{' '}
-          <Link to="/register" className="text-blue-400 font-bold hover:underline">
-            Create an Account
-          </Link>
-        </div>
-
       </div>
 
-      {/* Footer Info */}
-      <div className="text-center text-xs text-gray-500 mt-6 relative z-10">
-        CareerOS v1.0 • College PBL Implementation • FastAPI + JWT + React
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
+            <button
+              onClick={() => setShowForgotPasswordModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
+              Account Password Recovery
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              Enter your registered institutional email to initiate password recovery.
+            </p>
+
+            {forgotSubmitted ? (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs text-emerald-700 dark:text-emerald-300 space-y-2">
+                <div className="flex items-center gap-1.5 font-semibold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Recovery Instructions Sent</span>
+                </div>
+                <p>
+                  If an account exists for <strong>{forgotEmail}</strong>, an academic reset link has been dispatched. For immediate lab assistance, contact your CSE departmental administrator.
+                </p>
+                <div className="pt-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowForgotPasswordModal(false)}>
+                    Return to Sign In
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Registered Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="student@careeros.edu"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="ghost" size="sm" onClick={() => setShowForgotPasswordModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" size="sm">
+                    Send Reset Link
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Institutional Legal Footer Links */}
+      <div className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
+        <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
+        <span className="mx-2">•</span>
+        <Link to="/terms" className="hover:underline">Terms of Service</Link>
+        <span className="mx-2">•</span>
+        <span>MIT-ADT University CSE</span>
       </div>
     </div>
   );

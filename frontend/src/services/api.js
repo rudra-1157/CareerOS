@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -31,9 +31,9 @@ export const authService = {
       return response.data;
     } catch {
       return [
-        { role: 'student',  email: 'student@careeros.edu',  password: 'password123', name: 'Student Demo' },
-        { role: 'faculty',  email: 'faculty@careeros.edu',  password: 'password123', name: 'Faculty Demo' },
-        { role: 'admin',    email: 'admin@careeros.edu',    password: 'password123', name: 'Admin Demo' }
+        { role: 'student', email: 'student@careeros.edu', password: 'password123', name: 'Student Demo' },
+        { role: 'faculty', email: 'faculty@careeros.edu', password: 'password123', name: 'Faculty Demo' },
+        { role: 'admin', email: 'admin@careeros.edu', password: 'password123', name: 'Admin Demo' }
       ];
     }
   },
@@ -61,6 +61,28 @@ export const studentService = {
   },
   updateProfile: async (payload) => {
     const response = await apiClient.put('/student/profile', payload);
+    return response.data;
+  },
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/student/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  removeAvatar: async () => {
+    const response = await apiClient.delete('/student/avatar');
+    return response.data;
+  },
+  updateTheme: async (theme) => {
+    const formData = new FormData();
+    formData.append('theme', theme);
+    const response = await apiClient.put('/student/theme', formData);
+    return response.data;
+  },
+  getDeveloperProfile: async (userId) => {
+    const response = await apiClient.get(`/student/developer/${userId}`);
     return response.data;
   }
 };
@@ -91,8 +113,26 @@ export const adminService = {
 
 // ─── AI Mentor ────────────────────────────────────────────────────────────────
 export const mentorService = {
-  ask: async (query) => {
-    const response = await apiClient.post('/mentor/chat', { query });
+  ask: async (message, session_id = null) => {
+    const payload = { message };
+    if (session_id) payload.session_id = session_id;
+    const response = await apiClient.post('/mentor/chat', payload);
+    return response.data;
+  },
+  getSessions: async () => {
+    const response = await apiClient.get('/mentor/sessions');
+    return response.data;
+  },
+  createSession: async (title = 'New Conversation') => {
+    const response = await apiClient.post('/mentor/sessions', { title });
+    return response.data;
+  },
+  getSession: async (session_id) => {
+    const response = await apiClient.get(`/mentor/sessions/${session_id}`);
+    return response.data;
+  },
+  deleteSession: async (session_id) => {
+    const response = await apiClient.delete(`/mentor/sessions/${session_id}`);
     return response.data;
   },
   getResources: async () => {
@@ -125,6 +165,14 @@ export const codingService = {
   },
   submitCode: async (payload) => {
     const response = await apiClient.post('/coding/submit', payload);
+    return response.data;
+  },
+  createChallenge: async (payload) => {
+    const response = await apiClient.post('/coding/challenges/create', payload);
+    return response.data;
+  },
+  getSubmissions: async () => {
+    const response = await apiClient.get('/coding/submissions');
     return response.data;
   }
 };
@@ -198,6 +246,126 @@ export const companyService = {
   },
   getStats: async () => {
     const response = await apiClient.get('/company/stats');
+    return response.data;
+  }
+};
+
+// ─── Friends & Social ─────────────────────────────────────────────────────────
+export const friendsService = {
+  getFriends: async () => {
+    const response = await apiClient.get('/friends/list');
+    return response.data;
+  },
+  getRequests: async () => {
+    const response = await apiClient.get('/friends/requests');
+    return response.data;
+  },
+  searchFriends: async (query) => {
+    const response = await apiClient.get(`/friends/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  },
+  sendRequest: async (targetUserId) => {
+    const response = await apiClient.post(`/friends/request/${targetUserId}`);
+    return response.data;
+  },
+  acceptRequest: async (requestId) => {
+    const response = await apiClient.post(`/friends/accept/${requestId}`);
+    return response.data;
+  },
+  declineRequest: async (requestId) => {
+    const response = await apiClient.post(`/friends/decline/${requestId}`);
+    return response.data;
+  },
+  removeFriend: async (friendId) => {
+    const response = await apiClient.delete(`/friends/remove/${friendId}`);
+    return response.data;
+  },
+  compare: async (targetUserId) => {
+    const response = await apiClient.get(`/friends/compare/${targetUserId}`);
+    return response.data;
+  }
+};
+
+// ─── Coding Battles & Challenges ─────────────────────────────────────────────
+export const challengeService = {
+  createBattle: async (payload) => {
+    const response = await apiClient.post('/challenges/create', payload);
+    return response.data;
+  },
+  getRoom: async (roomCode) => {
+    const response = await apiClient.get(`/challenges/room/${roomCode}`);
+    return response.data;
+  },
+  joinRoom: async (roomCode) => {
+    const response = await apiClient.post(`/challenges/join/${roomCode}`);
+    return response.data;
+  },
+  toggleReady: async (roomCode, isReady = true) => {
+    const response = await apiClient.post(`/challenges/ready/${roomCode}`, { is_ready: isReady });
+    return response.data;
+  },
+  startBattle: async (roomCode) => {
+    const response = await apiClient.post(`/challenges/start/${roomCode}`);
+    return response.data;
+  },
+  submitCode: async (roomCode, payload) => {
+    const response = await apiClient.post(`/challenges/submit/${roomCode}`, payload);
+    return response.data;
+  },
+  getHistory: async () => {
+    const response = await apiClient.get('/challenges/history');
+    return response.data;
+  }
+};
+
+// ─── In-App Notifications ────────────────────────────────────────────────────
+export const notificationService = {
+  getNotifications: async () => {
+    const response = await apiClient.get('/notifications');
+    return response.data;
+  },
+  markRead: async (notificationId) => {
+    const response = await apiClient.put(`/notifications/${notificationId}/read`);
+    return response.data;
+  },
+  markAllRead: async () => {
+    const response = await apiClient.put('/notifications/read-all');
+    return response.data;
+  },
+  deleteNotification: async (notificationId) => {
+    const response = await apiClient.delete(`/notifications/${notificationId}`);
+    return response.data;
+  }
+};
+
+// ─── External Public Developer Data ──────────────────────────────────────────
+export const externalService = {
+  getGithub: async (username) => {
+    const response = await apiClient.get(`/external/github/${encodeURIComponent(username)}`);
+    return response.data;
+  },
+  getCodeforces: async (handle) => {
+    const response = await apiClient.get(`/external/codeforces/${encodeURIComponent(handle)}`);
+    return response.data;
+  }
+};
+
+// ─── Demo Accounts & Simulation ──────────────────────────────────────────────
+export const demoService = {
+  getDevelopers: async () => {
+    const response = await apiClient.get('/demo/developers');
+    return response.data;
+  },
+  getProfile: async (demoId) => {
+    const response = await apiClient.get(`/demo/profile/${demoId}`);
+    return response.data;
+  },
+  simulateFriendRequest: async (demoId) => {
+    const response = await apiClient.post(`/demo/simulate-friend-request/${demoId}`);
+    return response.data;
+  },
+  simulateChallenge: async (demoId) => {
+    const response = await apiClient.post(`/demo/simulate-challenge/${demoId}`);
     return response.data;
   }
 };

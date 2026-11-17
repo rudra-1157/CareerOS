@@ -1,24 +1,29 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, JSON
 from app.database import Base
 
-class GitHubProfile(Base):
+class GithubProfile(Base):
     __tablename__ = "github_profiles"
-
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    student_id = Column(Integer, ForeignKey("student_profiles.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     username = Column(String, nullable=False)
-    avatar_url = Column(String, default="")
-    bio = Column(String, default="")
+    avatar_url = Column(String, nullable=True)
+    bio = Column(String, nullable=True)
     public_repos = Column(Integer, default=0)
     total_stars = Column(Integer, default=0)
     total_commits = Column(Integer, default=0)
-    streak = Column(String, default="0 days")
-    github_score = Column(Integer, default=0)
-    evidence_strength = Column(String, default="Moderate")
-    languages = Column(JSON, default=list)        # [{"name": "Python", "percentage": 60, "color": "#3572A5"}]
-    top_repositories = Column(JSON, default=list) # [{"name": "repo1", "desc": "...", "stars": 5, "language": "Python"}]
-    last_synced_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    github_score = Column(Integer, default=50)
+    evidence_strength = Column(String, default="Developing")
+    languages = Column(JSON, nullable=True)
+    top_repositories = Column(JSON, nullable=True)
 
-    user = relationship("User", back_populates="github_profile")
+# Alias for compatibility with routers/services importing GitHubProfile
+GitHubProfile = GithubProfile
+
+class GithubRepository(Base):
+    __tablename__ = "github_repositories"
+    id = Column(Integer, primary_key=True, index=True)
+    github_profile_id = Column(Integer, ForeignKey("github_profiles.id"))
+    name = Column(String, nullable=False)
+    is_private = Column(Boolean, default=False)
+    language = Column(String, nullable=True)

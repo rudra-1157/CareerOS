@@ -1,40 +1,53 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useModal } from '../../context/ModalContext';
 import Button from './Button';
 
 const Modal = () => {
   const { modalData, closeModal } = useModal();
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && modalData.isOpen) {
+        closeModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalData.isOpen, closeModal]);
+
   if (!modalData.isOpen) return null;
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-5 animate-fadeIn"
+      className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity"
       onClick={closeModal}
+      role="dialog"
+      aria-modal="true"
     >
       <div 
-        className="bg-white rounded-[16px] p-6 w-full max-w-[560px] shadow-2xl relative"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-lg shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
-          className="absolute top-5 right-5 border-0 rounded-full w-[30px] height-[30px] flex items-center justify-center text-gray-500 hover:text-black hover:bg-gray-100 cursor-pointer text-xl font-bold transition-all"
+          className="absolute top-4 right-4 rounded-lg p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           onClick={closeModal}
-          aria-label="Close Modal"
+          aria-label="Close"
         >
-          ×
+          <X className="w-4 h-4" />
         </button>
 
-        <h2 className="text-[22px] font-[700] text-[#172033] mb-3">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2.5 pr-6 tracking-tight">
           {modalData.title}
         </h2>
 
-        <p className="text-[#68738a] text-[15px] leading-[1.6] mb-6 whitespace-pre-line">
+        <div className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-6 whitespace-pre-line max-h-[60vh] overflow-y-auto">
           {modalData.content}
-        </p>
+        </div>
 
-        <div className="flex justify-end">
-          <Button variant="primary" onClick={closeModal}>
-            Close
+        <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <Button variant="secondary" size="sm" onClick={closeModal}>
+            Dismiss
           </Button>
         </div>
       </div>

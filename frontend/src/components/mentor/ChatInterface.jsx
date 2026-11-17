@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '../common/Badge';
+import { BookOpen, Send, Bot, Sparkles, Loader2 } from 'lucide-react';
+import Button from '../common/Button';
 import { mentorService } from '../../services/api';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
-    { sender: 'ai', text: 'Hi Rudra! Ask me about your subjects, exam preparation, viva or career skills.' }
+    { sender: 'ai', text: 'Hi! Ask me about your academic curriculum, DSA concepts, system design, or interview preparation.' }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,10 +39,10 @@ const ChatInterface = () => {
           sources: response.sources 
         }
       ]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [
         ...prev,
-        { sender: 'ai', text: "CareerOS can answer this using the institution's approved resources. In the full version, RAG will retrieve relevant document chunks before the LLM generates the response." }
+        { sender: 'ai', text: "CareerOS can answer this using the institution's approved curriculum and syllabus resources." }
       ]);
     } finally {
       setIsLoading(false);
@@ -49,45 +50,53 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="bg-white border border-[#e6eaf2] rounded-[15px] p-[20px] shadow-[0_4px_18px_rgba(31,45,75,0.05)] flex flex-col h-full">
-      <h3 className="text-[17px] font-[700] text-[#172033] mb-3">Ask CareerOS</h3>
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <Bot className="w-4 h-4" />
+        </div>
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white">Ask CareerOS Mentor</h3>
+      </div>
       
-      <div className="h-[310px] overflow-y-auto bg-[#f7f9fd] rounded-[12px] p-[14px] flex flex-col gap-2 chat-scroll">
+      <div className="h-[310px] overflow-y-auto bg-slate-50 dark:bg-slate-800/40 rounded-xl p-3.5 flex flex-col gap-2.5">
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`max-w-[85%] p-[11px_14px] rounded-[12px] text-[14px] leading-[1.45] break-words ${
+            className={`max-w-[85%] p-3 rounded-xl text-xs leading-relaxed break-words ${
               msg.sender === 'me'
-                ? 'bg-[#315bdc] text-white self-end ml-auto'
-                : 'bg-white border border-[#e4e8f0] text-[#172033] self-start'
+                ? 'bg-blue-600 text-white self-end ml-auto'
+                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 self-start shadow-2xs'
             }`}
           >
             {msg.text}
             {msg.sources && msg.sources.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500">
-                📚 <i>RAG Sources: {msg.sources.join(', ')}</i>
+              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <BookOpen className="w-3 h-3 text-slate-400" />
+                <span>RAG Sources: {msg.sources.join(', ')}</span>
               </div>
             )}
           </div>
         ))}
         {isLoading && (
-          <div className="bg-white border border-[#e4e8f0] text-[#68738a] max-w-[85%] p-[11px_14px] rounded-[12px] text-[13px] self-start italic animate-pulse">
-            Thinking with Institutional RAG...
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 max-w-[85%] p-3 rounded-xl text-xs self-start italic flex items-center gap-2 shadow-2xs">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+            <span>Consulting institutional curriculum embeddings...</span>
           </div>
         )}
         <div ref={chatEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="flex gap-[8px] mt-[12px]">
+      <form onSubmit={handleSend} className="flex gap-2 mt-3">
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Try: Explain RAG in simple terms"
-          className="flex-1 p-[12px] border border-[#d9deea] rounded-[9px] text-[14px] outline-none focus:border-[#315bdc] transition-colors"
+          placeholder="Try: Explain RAG retrieval or two-pointer technique..."
+          className="flex-1 px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:border-blue-600 dark:focus:border-blue-500"
         />
-        <Button type="submit" variant="primary" disabled={isLoading}>
-          {isLoading ? '...' : 'Ask'}
+        <Button type="submit" variant="primary" size="sm" disabled={isLoading} className="shrink-0">
+          <Send className="w-3.5 h-3.5 mr-1" />
+          Ask
         </Button>
       </form>
     </div>

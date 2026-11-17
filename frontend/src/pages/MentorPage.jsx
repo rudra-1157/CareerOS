@@ -1,182 +1,476 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { initialMentorData } from '../data/initialData';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  Compass,
+  Plus,
+  Trash2,
+  Send,
+  HelpCircle,
+  Lightbulb,
+  BookOpen,
+  Sparkles,
+  AlertCircle,
+  CheckCircle2,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+import { mentorService } from '../services/api';
 import { useModal } from '../context/ModalContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 
+// ─── Simple Markdown Renderer ─────────────────────────────────────────────────
+function renderMarkdown(text) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const elements = [];
+  let i = 0;
+  let key = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Fenced code block
+    if (line.trimStart().startsWith('```')) {
+      const lang = line.trimStart().slice(3).trim() || 'text';
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trimStart().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <div key={key++} className="my-2 rounded-lg overflow-hidden border border-slate-700 text-xs">
+          <div className="flex items-center bg-slate-800 px-3 py-1 text-slate-400 font-mono text-[10px] uppercase tracking-wide">
+            {lang}
+          </div>
+          <pre className="bg-slate-950 text-slate-200 p-3 overflow-x-auto font-mono text-[11px] leading-5">
+            <code>{codeLines.join('\n')}</code>
+          </pre>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // Headings
+    const h3m = line.match(/^### (.+)/);
+    const h2m = line.match(/^## (.+)/);
+    const h1m = line.match(/^# (.+)/);
+    if (h1m) { elements.push(<h3 key={key++} className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-3 mb-1">{inlineFormat(h1m[1])}</h3>); i++; continue; }
+    if (h2m) { elements.push(<h4 key={key++} className="text-[13px] font-semibold text-blue-600 dark:text-blue-400 mt-2 mb-1">{inlineFormat(h2m[1])}</h4>); i++; continue; }
+    if (h3m) { elements.push(<h5 key={key++} className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-2 mb-0.5 uppercase tracking-wide">{inlineFormat(h3m[1])}</h5>); i++; continue; }
+
+    // Bullet list
+    const bullet = line.match(/^[\s]*[-*•] (.+)/);
+    if (bullet) {
+      elements.push(
+        <div key={key++} className="flex items-start gap-1.5 my-0.5">
+          <span className="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0">•</span>
+          <span className="text-xs leading-relaxed">{inlineFormat(bullet[1])}</span>
+        </div>
+      );
+      i++; continue;
+    }
+
+    // Numbered list
+    const numbered = line.match(/^[\s]*(\d+)\. (.+)/);
+    if (numbered) {
+      elements.push(
+        <div key={key++} className="flex items-start gap-1.5 my-0.5">
+          <span className="text-blue-600 dark:text-blue-400 font-semibold text-[11px] mt-0.5 shrink-0 w-4">{numbered[1]}.</span>
+          <span className="text-xs leading-relaxed">{inlineFormat(numbered[2])}</span>
+        </div>
+      );
+      i++; continue;
+    }
+
+    // Horizontal rule
+    if (line.match(/^---+$/) || line.match(/^\*\*\*+$/)) {
+      elements.push(<hr key={key++} className="border-slate-200 dark:border-slate-800 my-2" />);
+      i++; continue;
+    }
+
+    // Empty line
+    if (line.trim() === '') {
+      elements.push(<div key={key++} className="h-1" />);
+      i++; continue;
+    }
+
+    // Paragraph
+    elements.push(<p key={key++} className="text-xs leading-relaxed my-0.5">{inlineFormat(line)}</p>);
+    i++;
+  }
+
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
+function inlineFormat(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**'))
+      return <strong key={idx} className="font-semibold text-slate-900 dark:text-slate-100">{part.slice(2, -2)}</strong>;
+    if (part.startsWith('`') && part.endsWith('`'))
+      return <code key={idx} className="bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded font-mono text-[10px]">{part.slice(1, -1)}</code>;
+    if (part.startsWith('*') && part.endsWith('*'))
+      return <em key={idx} className="italic text-slate-600 dark:text-slate-400">{part.slice(1, -1)}</em>;
+    return part;
+  });
+}
+
+// ─── MentorPage ───────────────────────────────────────────────────────────────
+const WELCOME_MSG = {
+  id: 'welcome',
+  role: 'assistant',
+  content: "Hello! I am your CareerOS AI Learning Mentor, configured with your institutional CS curriculum.\n\nI can help you with:\n- Core Computer Science concepts (OS, DSA, DBMS, Computer Networks)\n- Algorithmic problem debugging and code explanation\n- Semester viva preparation and past question reviews\n- Placement roadmap and target role guidance\n\nWhat topic would you like to explore today?",
+  timestamp: 'Just now',
+  isWelcome: true,
+};
+
 const MentorPage = () => {
   const { openModal } = useModal();
-  const [messages, setMessages] = useState(initialMentorData.initialMessages);
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [messages, setMessages] = useState([WELCOME_MSG]);
   const [inputQuery, setInputQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedContext, setSelectedContext] = useState('All Resources');
-  const chatEndRef = useRef(null);
+  const [resources, setResources] = useState([]);
+  const [aiStatus, setAiStatus] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(true);
 
-  const scrollToBottom = () => {
+  const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const scrollToBottom = useCallback(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
+
+  useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+    const init = async () => {
+      try {
+        const [sessionRes, resRes, statusRes] = await Promise.allSettled([
+          mentorService.getSessions(),
+          mentorService.getResources(),
+          mentorService.getAIStatus(),
+        ]);
+        if (sessionRes.status === 'fulfilled') {
+          setSessions(Array.isArray(sessionRes.value) ? sessionRes.value : []);
+        }
+        if (resRes.status === 'fulfilled' && resRes.value?.resources) {
+          setResources(resRes.value.resources);
+        }
+        if (statusRes.status === 'fulfilled') {
+          setAiStatus(statusRes.value);
+        }
+      } finally {
+        setSessionsLoading(false);
+      }
+    };
+    init();
+  }, []);
 
-  const handleAsk = (queryText) => {
-    const textToSend = queryText || inputQuery;
-    if (!textToSend.trim()) return;
+  const loadSession = async (sessionId) => {
+    if (sessionId === activeSessionId) return;
+    try {
+      const data = await mentorService.getSession(sessionId);
+      setActiveSessionId(sessionId);
+      if (data.messages && data.messages.length > 0) {
+        setMessages(data.messages.map(m => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        })));
+      } else {
+        setMessages([{ ...WELCOME_MSG, id: 'empty', content: "This is a fresh conversation. What would you like to discuss?" }]);
+      }
+    } catch { /* keep current */ }
+  };
 
-    // Add user message
+  const startNewConversation = () => {
+    setActiveSessionId(null);
+    setMessages([WELCOME_MSG]);
+    inputRef.current?.focus();
+  };
+
+  const deleteSession = async (e, sessionId) => {
+    e.stopPropagation();
+    try {
+      await mentorService.deleteSession(sessionId);
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      if (activeSessionId === sessionId) startNewConversation();
+    } catch { /* ignore */ }
+  };
+
+  const refreshSessions = () => {
+    mentorService.getSessions().then(list => {
+      if (Array.isArray(list)) setSessions(list);
+    }).catch(() => {});
+  };
+
+  const handleAsk = async (queryText) => {
+    const textToSend = (queryText || inputQuery).trim();
+    if (!textToSend || isTyping) return;
+
     const userMsg = {
-      id: Date.now(),
-      sender: 'me',
-      text: textToSend,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      id: `u-${Date.now()}`,
+      role: 'user',
+      content: textToSend,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => [...prev.filter(m => !m.isWelcome), userMsg]);
     setInputQuery('');
     setIsTyping(true);
 
-    // Simulate AI / RAG generation
-    setTimeout(() => {
-      let aiResponseText = '';
-      const q = textToSend.toLowerCase();
+    try {
+      const res = await mentorService.ask(textToSend, activeSessionId);
 
-      if (q.includes('rag')) {
-        aiResponseText = "RAG (Retrieval-Augmented Generation) in CareerOS indexes approved institutional materials (course syllabi, lecture slides, and past year exams) into a vector database. When you ask a question, relevant chunks are retrieved and provided as authoritative context to the LLM to deliver grounded, syllabus-aligned answers.";
-      } else if (q.includes('os') || q.includes('operating') || q.includes('process') || q.includes('viva')) {
-        aiResponseText = "Based on your semester 3 Operating Systems syllabus (Unit 2: Process Synchronization):\n\n1. Critical Section Problem: A solution must satisfy Mutual Exclusion, Progress, and Bounded Waiting.\n2. Semaphores vs Mutex: A mutex is a locking mechanism (binary), while a semaphore is a signaling mechanism (counting/binary).\n3. Classic Viva Question: 'How does Peterson's solution avoid race conditions?' Answer: By using two variables: `flag[2]` and `turn`.";
-      } else if (q.includes('dsa') || q.includes('graph') || q.includes('tree') || q.includes('roadmap')) {
-        aiResponseText = "Here is your 4-Week Graph Algorithms Roadmap:\n\n• Week 1: Graph Representations (Adjacency Matrix vs List) + BFS & DFS traversals.\n• Week 2: Topological Sorting (Kahn's Algorithm) + Cycle Detection in Directed & Undirected graphs.\n• Week 3: Shortest Path Algorithms: Dijkstra (with Min-Heap priority queue) & Bellman-Ford.\n• Week 4: Minimum Spanning Trees (Kruskal's + Disjoint Set Union & Prim's Algorithm).";
-      } else if (q.includes('ml') || q.includes('machine learning') || q.includes('project') || q.includes('recruiter')) {
-        aiResponseText = "To make your Machine Learning projects recruiter-ready for AI/ML roles:\n\n1. End-to-End Pipeline: Don't just submit a Jupyter Notebook. Wrap model inference in a FastAPI service.\n2. Metrics & Benchmarks: Highlight latency benchmarks (e.g. '<35ms per batch') and validation accuracy / F1 score in your GitHub README.\n3. CI/CD: Include Docker containerization and a basic GitHub Actions workflow for automated tests.";
-      } else {
-        aiResponseText = `I analyzed your query: "${textToSend}" against your university syllabus and target goal (AI/ML Engineer). CareerOS recommends reviewing the related laboratory manuals and solving corresponding Coding Arena problems to turn this theoretical knowledge into verifiable skill evidence.`;
+      if (res.session_id) {
+        setActiveSessionId(res.session_id);
+        refreshSessions();
       }
 
       const aiMsg = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        text: aiResponseText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        id: res.ai_message?.id || `a-${Date.now()}`,
+        role: 'assistant',
+        content: res.ai_message?.content || res.response || "I couldn't generate a response. Please try again.",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        contextUsed: res.context_used,
       };
-
       setMessages(prev => [...prev, aiMsg]);
+    } catch (err) {
+      const detail = err.response?.data?.detail || "Sorry, I encountered an error. Please try again.";
+      const errContent = detail === 'AI service is not configured.'
+        ? "**AI service is not configured.**\n\nPlease verify that `GEMINI_API_KEY` is set in `backend/.env` to enable live LLM responses."
+        : detail;
+      setMessages(prev => [...prev, {
+        id: `err-${Date.now()}`,
+        role: 'assistant',
+        content: errContent,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isError: true,
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 900);
+    }
   };
 
-  const handleClearChat = () => {
-    setMessages([
-      { id: Date.now(), sender: 'ai', text: 'Chat cleared. Ask me about your subjects, exam prep, or coding roadmap!', timestamp: 'Just now' }
-    ]);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAsk(); }
   };
+
+  const suggestedQuestions = [
+    "Explain Peterson's Solution for Process Synchronization",
+    "Give me common DBMS viva questions for Semester 3",
+    "Write an optimal Python solution for Two Sum",
+    "Help me prepare for an AI/ML technical interview",
+    "What skills should I prioritize for my target role?",
+    "Explain the CAP theorem with concrete examples",
+  ];
+
+  const defaultResources = [
+    { id: 1, title: 'Operating Systems', count: '5 Units Indexed', category: 'Core CS', topics: ['Processes', 'CPU Scheduling', 'Deadlocks'] },
+    { id: 2, title: 'Data Structures & Algorithms', count: '8 Modules Indexed', category: 'Core CS', topics: ['Trees & Graphs', 'Sorting', 'DP'] },
+    { id: 3, title: 'Database Management Systems', count: '6 Units Indexed', category: 'Databases', topics: ['Normalization', 'SQL', 'ACID'] },
+    { id: 4, title: 'Machine Learning & AI', count: '7 Units Indexed', category: 'AI/ML', topics: ['Supervised Learning', 'Neural Networks', 'Transformers'] },
+  ];
+
+  const displayResources = resources.length > 0 ? resources : defaultResources;
+  const activeSessionTitle = sessions.find(s => s.id === activeSessionId)?.title;
 
   return (
-    <div className="space-y-6">
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-[#101a3b] via-[#172654] to-[#315bdc] text-white rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-5">
+      
+      {/* ─── Hero Banner ─────────────────────────────────────────────────── */}
+      <div className="bg-slate-900 dark:bg-slate-900 border border-slate-800 text-white rounded-xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-[#dce5ff] mb-2">
-            <span>📚 Context:</span>
-            <span className="text-white font-bold">University Syllabi + AI Mentor</span>
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded bg-blue-950/80 border border-blue-800/60 text-xs font-medium text-blue-300 mb-2">
+            <span className={`w-1.5 h-1.5 rounded-full ${aiStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+            <span>{aiStatus?.configured ? 'Gemini AI Active' : aiStatus ? 'AI Service Offline' : 'Checking status...'}</span>
           </div>
-          <h2 className="text-2xl font-extrabold text-white">🤖 AI Learning Mentor</h2>
-          <p className="text-sm text-[#dce5ff] mt-1">
-            RAG-powered academic assistant indexed with your university course materials, lab manuals, and exam papers.
+          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+            <Compass className="w-5 h-5 text-blue-400" />
+            AI Learning Mentor
+          </h2>
+          <p className="text-xs text-slate-300 mt-1 max-w-xl font-normal leading-relaxed">
+            Institutional syllabus-indexed guidance powered by Google Gemini. Ask questions about core computer science subjects, algorithms, vivas, or placement readiness.
           </p>
         </div>
 
-        <Button
-          variant="secondary"
-          size="md"
-          onClick={() => openModal("RAG Architecture in CareerOS", "In CareerOS, institutional syllabi, textbooks, and past papers are chunked and converted into vector embeddings. When a student asks a query, high-similarity text chunks are retrieved and injected into the LLM prompt for hallucination-free, syllabus-aligned assistance.")}
-          className="bg-white text-[#101a3b] hover:bg-[#edf2ff] font-bold shadow-sm shrink-0"
-        >
-          💡 How RAG Works
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSidebar(p => !p)}
+            className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 text-xs"
+          >
+            {showSidebar ? <ChevronLeft className="w-3.5 h-3.5 mr-1" /> : <ChevronRight className="w-3.5 h-3.5 mr-1" />}
+            {showSidebar ? 'Hide History' : 'Chat History'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openModal(
+              "About CareerOS AI Learning Mentor",
+              "The AI Learning Mentor is designed to provide grounded academic support for computer science subjects.\n\n• Syllabus Alignment: Answers incorporate institutional curriculum topics (OS, DBMS, DSA, Networks).\n• Personalized Feedback: When you ask career questions ('What should I learn next?'), the model consults your verified profile, skills, and roadmap.\n• Privacy & Security: Inquiries are logged persistently to your student workspace."
+            )}
+            className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 text-xs"
+          >
+            <HelpCircle className="w-3.5 h-3.5 mr-1" />
+            How It Works
+          </Button>
+        </div>
       </div>
 
-      {/* Main 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left 2 Cols: Interactive Chat Interface */}
-        <div className="lg:col-span-2 space-y-4">
+      {/* ─── Main Interface Grid ─────────────────────────────────────────── */}
+      <div className={`grid gap-5 ${showSidebar ? 'grid-cols-1 lg:grid-cols-4' : 'grid-cols-1'}`}>
+
+        {/* Sidebar: Conversation Sessions */}
+        {showSidebar && (
+          <div className="lg:col-span-1 space-y-4">
+            <Card
+              title="Conversations"
+              subtitle="Session history"
+              action={
+                <Button variant="ghost" size="sm" onClick={startNewConversation}>
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  New
+                </Button>
+              }
+            >
+              <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-0.5">
+                {sessionsLoading ? (
+                  <div className="text-xs text-slate-400 text-center py-4">Loading sessions...</div>
+                ) : sessions.length === 0 ? (
+                  <div className="text-xs text-slate-400 text-center py-6 leading-relaxed">
+                    No conversations yet.<br />Start chatting to save history.
+                  </div>
+                ) : (
+                  sessions.map(session => (
+                    <div
+                      key={session.id}
+                      onClick={() => loadSession(session.id)}
+                      className={`group flex items-start justify-between gap-2 p-2.5 rounded-lg cursor-pointer transition-colors border ${
+                        activeSessionId === session.id
+                          ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-xs font-semibold truncate ${activeSessionId === session.id ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                          {session.title}
+                        </p>
+                        {session.preview && (
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5">{session.preview}</p>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-0.5">{session.message_count} messages</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => deleteSession(e, session.id)}
+                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-1 rounded transition-opacity"
+                        title="Delete conversation"
+                        aria-label="Delete conversation"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+
+            <Card title="Study Guidelines">
+              <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-2 list-disc pl-4 leading-relaxed">
+                <li>Ask for code explanations in Python or C++ to review algorithmic time and space complexity.</li>
+                <li>Use the mentor to simulate viva question sets for OS, DBMS, and Networks.</li>
+                <li>Ask <strong className="text-blue-600 dark:text-blue-400">"What should I learn next?"</strong> for advice matched to your target role.</li>
+              </ul>
+            </Card>
+          </div>
+        )}
+
+        {/* Chat Conversation Column */}
+        <div className={`${showSidebar ? 'lg:col-span-3' : ''} space-y-4`}>
           <Card
-            title="Ask CareerOS AI"
-            subtitle="Real-time answers grounded in your course material"
+            title={activeSessionTitle || 'New Conversation'}
+            subtitle="Curriculum concepts, algorithmic code explanations and interview prep"
             action={
               <div className="flex items-center gap-2">
-                <Badge variant="success">RAG Active</Badge>
-                <Button variant="ghost" size="sm" onClick={handleClearChat}>
-                  🗑️ Clear
+                <Badge variant={aiStatus?.configured ? 'success' : 'warning'} size="sm">
+                  {aiStatus?.configured ? 'Gemini Active' : 'Offline'}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={startNewConversation}>
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  New
                 </Button>
               </div>
             }
-            bodyClassName="p-4 md:p-6"
+            bodyClassName="p-4 md:p-5"
           >
-            {/* Context filter chips */}
-            <div className="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-[#edf0f5]">
-              <span className="text-xs font-semibold text-[#68738a]">Filter Context:</span>
-              {['All Resources', 'OS', 'DSA', 'DBMS', 'Exam Papers'].map((ctx) => (
-                <button
-                  key={ctx}
-                  onClick={() => setSelectedContext(ctx)}
-                  className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${
-                    selectedContext === ctx
-                      ? 'bg-[#315bdc] text-white'
-                      : 'bg-[#f8f9fc] text-[#68738a] hover:bg-[#edf2ff] hover:text-[#315bdc]'
-                  }`}
-                >
-                  {ctx}
-                </button>
-              ))}
-            </div>
-
-            {/* Chat Message Window */}
-            <div className="h-[380px] overflow-y-auto bg-[#f7f9fd] border border-[#e5e9f1] rounded-2xl p-4 space-y-3.5 scroll-smooth">
+            {/* Chat Window */}
+            <div className="h-[440px] overflow-y-auto bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-4">
               {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm whitespace-pre-line ${
-                      msg.sender === 'me'
-                        ? 'bg-[#315bdc] text-white rounded-br-none'
-                        : 'bg-white text-[#172033] border border-[#e2e8f0] rounded-bl-none'
-                    }`}
-                  >
-                    {msg.text}
+                <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  {/* Sender Label */}
+                  <div className={`flex items-center gap-1.5 mb-1 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {msg.role === 'user' ? 'You' : 'CareerOS Mentor'} • {msg.timestamp}
+                    </span>
+                    {msg.contextUsed && (
+                      <span className="text-[10px] bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 px-1.5 py-0.2 rounded font-medium border border-blue-200 dark:border-blue-900">
+                        Personalized
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[10px] text-[#94a3b8] mt-1 px-1">
-                    {msg.sender === 'me' ? 'You' : 'CareerOS AI'} • {msg.timestamp}
-                  </span>
+
+                  {/* Message Bubble */}
+                  <div className={`max-w-[88%] rounded-xl px-4 py-3 shadow-sm ${
+                    msg.role === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-none'
+                      : `bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border rounded-bl-none ${msg.isError ? 'border-red-200 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/40 text-red-700 dark:text-red-300' : 'border-slate-200 dark:border-slate-800'}`
+                  }`}>
+                    {msg.role === 'user'
+                      ? <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      : renderMarkdown(msg.content)
+                    }
+                  </div>
                 </div>
               ))}
 
+              {/* Typing indicator */}
               {isTyping && (
-                <div className="flex items-center gap-2 text-xs text-[#68738a] p-2 bg-white rounded-xl border border-[#e2e8f0] w-fit">
-                  <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-[#315bdc] rounded-full animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 bg-[#315bdc] rounded-full animate-bounce delay-100"></span>
-                    <span className="w-1.5 h-1.5 bg-[#315bdc] rounded-full animate-bounce delay-200"></span>
+                <div className="flex items-start gap-2">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl rounded-bl-none px-4 py-3 shadow-sm">
+                    <div className="flex gap-1.5 items-center">
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:150ms]" />
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:300ms]" />
+                      <span className="text-xs text-slate-400 ml-2">Mentor is formulating response...</span>
+                    </div>
                   </div>
-                  <span>Searching university knowledge base...</span>
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
 
-            {/* Suggested Questions */}
+            {/* Suggested prompts */}
             <div className="mt-3">
-              <div className="text-xs font-semibold text-[#68738a] mb-2">💡 Suggested Questions:</div>
-              <div className="flex flex-wrap gap-2">
-                {initialMentorData.suggestedQuestions.map((q, idx) => (
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-1.5">
+                Suggested Prompts:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {suggestedQuestions.map((q, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleAsk(q)}
-                    className="text-xs text-left px-3 py-1.5 bg-[#edf2ff] hover:bg-[#dbe6ff] text-[#315bdc] font-medium rounded-xl border border-[#d6e2ff] transition-all"
+                    disabled={isTyping}
+                    className="text-xs text-left px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
                   >
                     {q}
                   </button>
@@ -185,71 +479,57 @@ const MentorPage = () => {
             </div>
 
             {/* Input Form */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAsk();
-              }}
-              className="mt-4 flex gap-2"
-            >
-              <input
-                type="text"
+            <div className="mt-4 flex gap-2">
+              <textarea
+                ref={inputRef}
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
-                placeholder="Ask about Operating Systems, DSA, Viva questions, or ML..."
-                className="flex-1 px-4 py-3 bg-white border border-[#d9deea] rounded-xl text-sm focus:outline-none focus:border-[#315bdc] focus:ring-1 focus:ring-[#315bdc]"
+                onKeyDown={handleKeyDown}
+                rows={2}
+                placeholder="Ask any question regarding your syllabus or coding challenges (Press Enter to submit)..."
+                className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <Button
-                type="submit"
+                type="button"
                 variant="primary"
                 size="md"
                 disabled={!inputQuery.trim() || isTyping}
-                className="px-6 font-bold"
+                onClick={() => handleAsk()}
+                className="px-4 font-semibold text-xs self-end"
               >
-                Send →
+                <Send className="w-3.5 h-3.5 mr-1" />
+                Send
               </Button>
-            </form>
-          </Card>
-        </div>
-
-        {/* Right Column: Indexed Institution Resources */}
-        <div className="space-y-6">
-          <Card
-            title="Institution Resources"
-            subtitle="Indexed for your current Semester"
-            action={<Badge variant="info">Synced</Badge>}
-          >
-            <div className="space-y-3">
-              {initialMentorData.resources.map((res) => (
-                <div
-                  key={res.id}
-                  onClick={() => openModal(res.title, `Resource details:\n• Category: ${res.category}\n• Modules: ${res.count}\n• Indexed Key Topics:\n${res.topics?.map(t => '  - ' + t).join('\n')}`)}
-                  className="p-3 bg-[#f8f9fc] hover:bg-[#edf2ff] border border-[#e5e9f1] hover:border-[#315bdc]/40 rounded-xl transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xl">{res.icon}</span>
-                      <div>
-                        <b className="text-xs text-[#172033] group-hover:text-[#315bdc] block">
-                          {res.title}
-                        </b>
-                        <span className="text-[11px] text-[#68738a]">{res.count}</span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-[#9eb0d7] group-hover:text-[#315bdc]">➔</span>
-                  </div>
-                </div>
-              ))}
             </div>
+
+            {aiStatus && !aiStatus.configured && (
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg p-2.5">
+                <strong>AI Service Offline:</strong> Add <code className="bg-amber-100 dark:bg-amber-900/60 px-1 rounded font-mono">GEMINI_API_KEY</code> to <code className="bg-amber-100 dark:bg-amber-900/60 px-1 rounded font-mono">backend/.env</code> to activate live Gemini AI answers.
+              </p>
+            )}
           </Card>
 
-          <Card title="Mentor Study Tips">
-            <ul className="text-xs text-[#475569] space-y-2.5 list-disc pl-4 leading-relaxed">
-              <li>Use the mentor before laboratory vivas to rehearse classical OS and DBMS question sets.</li>
-              <li>Ask for code explanations in Python or C++ to improve algorithmic clarity.</li>
-              <li>Practice turning theoretical topics into tangible project ideas for your Skill Passport.</li>
-            </ul>
-          </Card>
+          {/* Curriculum Resource Index */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {displayResources.map((res) => (
+              <div
+                key={res.id}
+                onClick={() => openModal(
+                  res.title,
+                  `• Subject Domain: ${res.title}\n• Category: ${res.category}\n• Index Count: ${res.count}\n\nKey Indexed Topics:\n${(res.topics || []).map(t => '  - ' + t).join('\n')}`
+                )}
+                className="p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors cursor-pointer group"
+              >
+                <div className="w-6 h-6 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1.5">
+                  <BookOpen className="w-3.5 h-3.5" />
+                </div>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
+                  {res.title}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{res.count}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

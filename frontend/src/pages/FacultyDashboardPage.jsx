@@ -1,6 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  GraduationCap, 
+  BarChart3, 
+  Sparkles, 
+  Bot, 
+  Mic, 
+  RefreshCw, 
+  Award, 
+  CheckCircle2, 
+  Users, 
+  Check, 
+  BookOpen, 
+  FileCheck,
+  ChevronRight,
+  Clock,
+  ArrowUpRight
+} from 'lucide-react';
 import { facultyService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Card from '../components/common/Card';
+import StatCard from '../components/common/StatCard';
+import Button from '../components/common/Button';
+import Badge from '../components/common/Badge';
 
 const FacultyDashboardPage = () => {
   const { currentUser } = useAuth();
@@ -48,7 +69,7 @@ const FacultyDashboardPage = () => {
     setSubmissions((prev) =>
       prev.map((item, idx) => (idx === index ? { ...item, status: 'Verified' } : item))
     );
-    setSuccessToast(`Verified submission & awarded XP to ${studentName}!`);
+    setSuccessToast(`Verified submission & awarded XP to ${studentName}.`);
     setTimeout(() => setSuccessToast(''), 3500);
   };
 
@@ -56,76 +77,80 @@ const FacultyDashboardPage = () => {
     <div className="space-y-6">
       {/* Toast Alert */}
       {successToast && (
-        <div className="fixed top-5 right-5 z-50 bg-[#10b981] text-white px-4 py-2.5 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2">
-          <span>✓</span> {successToast}
+        <div className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 border border-emerald-500">
+          <CheckCircle2 className="w-4 h-4" />
+          <span>{successToast}</span>
         </div>
       )}
 
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-[#101a3b] to-[#1c2e64] text-white p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4">
+      <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 border border-slate-800 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-6">
         <div>
-          <div className="inline-block px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold uppercase tracking-wider mb-2">
-            👨‍🏫 Faculty Portal • Academic Mentorship
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-xs font-medium text-slate-200 mb-2">
+            <GraduationCap className="w-3.5 h-3.5 text-blue-400" />
+            <span>Faculty Portal • Academic Mentorship</span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
             Welcome, {currentUser?.name || 'Dr. Arvind Sharma'}
-          </h2>
-          <p className="text-blue-100/80 text-sm mt-1 max-w-xl">
+          </h1>
+          <p className="text-slate-300 text-xs mt-1">
             {currentUser?.degree || 'Professor & HOD'} • {currentUser?.department || 'Department of CSE'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2.5 shrink-0">
           <button
             onClick={() => {
               setSuccessToast('Batch performance report downloaded as PDF.');
               setTimeout(() => setSuccessToast(''), 3000);
             }}
-            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-slate-700 flex items-center gap-1.5"
           >
-            📊 Export Analytics
+            <BarChart3 className="w-3.5 h-3.5 text-slate-400" />
+            Export Analytics
           </button>
           <button
             onClick={() => {
-              setSuccessToast('Institutional AI Assessment initiated for all 3 batches.');
+              setSuccessToast('Institutional AI Assessment initiated for all cohorts.');
               setTimeout(() => setSuccessToast(''), 3000);
             }}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
           >
-            ⚡ Run Cohort AI Check
+            <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+            Run Cohort Check
           </button>
         </div>
       </div>
 
       {/* High-Level Faculty Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-[#e3e8f3] shadow-xs">
-          <div className="text-xs text-[#68738a] font-medium uppercase tracking-wider">Total Students</div>
-          <div className="text-2xl font-extrabold text-[#172033] mt-1">{dashboardData.stats.total_students}</div>
-          <div className="text-[11px] text-[#10b981] font-semibold mt-1">Across 3 cohorts</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Total Students</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{dashboardData.stats.total_students}</div>
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">Across 3 cohorts</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#e3e8f3] shadow-xs">
-          <div className="text-xs text-[#68738a] font-medium uppercase tracking-wider">Batches Mentored</div>
-          <div className="text-2xl font-extrabold text-[#172033] mt-1">{dashboardData.stats.batches_assigned}</div>
-          <div className="text-[11px] text-blue-600 font-semibold mt-1">CSE 2nd & 3rd Year</div>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Batches Mentored</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{dashboardData.stats.batches_assigned}</div>
+          <div className="text-[11px] text-blue-600 dark:text-blue-400 font-medium mt-1">CSE 2nd & 3rd Year</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#e3e8f3] shadow-xs">
-          <div className="text-xs text-[#68738a] font-medium uppercase tracking-wider">Avg Skill Confidence</div>
-          <div className="text-2xl font-extrabold text-[#172033] mt-1">{dashboardData.stats.avg_skill_confidence}</div>
-          <div className="text-[11px] text-[#10b981] font-semibold mt-1">▲ +4% this month</div>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Skill Confidence</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{dashboardData.stats.avg_skill_confidence}</div>
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">+4% this month</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#e3e8f3] shadow-xs">
-          <div className="text-xs text-[#68738a] font-medium uppercase tracking-wider">Placement Ready</div>
-          <div className="text-2xl font-extrabold text-[#172033] mt-1">{dashboardData.stats.placement_ready_pct}</div>
-          <div className="text-[11px] text-purple-600 font-semibold mt-1">108 qualified students</div>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Placement Ready</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{dashboardData.stats.placement_ready_pct}</div>
+          <div className="text-[11px] text-blue-600 dark:text-blue-400 font-medium mt-1">108 qualified students</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-[#e3e8f3] shadow-xs">
-          <div className="text-xs text-[#68738a] font-medium uppercase tracking-wider">Pending Viva Reviews</div>
-          <div className="text-2xl font-extrabold text-[#172033] mt-1 text-amber-600">{dashboardData.stats.pending_viva_reviews}</div>
-          <div className="text-[11px] text-amber-600 font-semibold mt-1">Requires your sign-off</div>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Pending Reviews</div>
+          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{dashboardData.stats.pending_viva_reviews}</div>
+          <div className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1">Requires your sign-off</div>
         </div>
       </div>
 
@@ -134,46 +159,36 @@ const FacultyDashboardPage = () => {
         
         {/* Assigned Batches (2 Cols) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-5 rounded-2xl border border-[#e3e8f3] shadow-xs">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-base font-bold text-[#172033]">Assigned Classes & Batches</h3>
-                <p className="text-xs text-[#68738a]">Active academic coursework and student cohort performance</p>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg">
-                Semester Active
-              </span>
-            </div>
-
+          <Card title="Assigned Classes & Batches" subtitle="Active academic coursework and student cohort performance">
             <div className="space-y-3">
               {dashboardData.assigned_classes.map((cls, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-xl border border-[#eaf0fa] hover:border-blue-200 transition-colors bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#101a3b] text-white">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-900 dark:bg-slate-700 text-white">
                         {cls.code}
                       </span>
-                      <h4 className="text-sm font-bold text-[#172033]">{cls.subject}</h4>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{cls.subject}</h4>
                     </div>
-                    <div className="text-xs text-[#68738a] mt-1">
-                      Batch: <span className="font-semibold text-gray-700">{cls.batch}</span> • {cls.students} Enrolled Students
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Batch: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{cls.batch}</strong> • {cls.students} Enrolled
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 self-end sm:self-auto">
                     <div className="text-right">
-                      <div className="text-xs text-[#68738a]">Cohort Avg</div>
-                      <div className="text-sm font-bold text-emerald-600">{cls.avg_score}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">Cohort Avg</div>
+                      <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{cls.avg_score}</div>
                     </div>
                     <button
                       onClick={() => {
                         setSuccessToast(`Opened cohort roster for ${cls.code}.`);
                         setTimeout(() => setSuccessToast(''), 2500);
                       }}
-                      className="px-3 py-1.5 bg-white border border-gray-300 hover:border-blue-500 hover:text-blue-600 rounded-lg text-xs font-semibold text-gray-700 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                     >
                       View Roster
                     </button>
@@ -181,24 +196,14 @@ const FacultyDashboardPage = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* Student Submissions & Viva Verification Queue */}
-          <div className="bg-white p-5 rounded-2xl border border-[#e3e8f3] shadow-xs">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-base font-bold text-[#172033]">Student Submissions & Viva Queue</h3>
-                <p className="text-xs text-[#68738a]">Practical challenges, lab projects & viva voce evaluations</p>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg">
-                4 Recent Submissions
-              </span>
-            </div>
-
+          <Card title="Student Submissions & Viva Queue" subtitle="Practical challenges, lab projects & viva voce evaluations">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-gray-200 text-[#68738a] font-semibold">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                     <th className="pb-2.5">Student</th>
                     <th className="pb-2.5">Assessment Topic</th>
                     <th className="pb-2.5">Submitted</th>
@@ -206,35 +211,27 @@ const FacultyDashboardPage = () => {
                     <th className="pb-2.5 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   {submissions.map((sub, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50/70">
-                      <td className="py-3 font-semibold text-[#172033]">{sub.student}</td>
-                      <td className="py-3 text-gray-600">{sub.topic}</td>
-                      <td className="py-3 text-gray-500">{sub.time}</td>
+                    <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                      <td className="py-3 font-semibold text-slate-900 dark:text-white">{sub.student}</td>
+                      <td className="py-3 text-slate-600 dark:text-slate-300">{sub.topic}</td>
+                      <td className="py-3 text-slate-500 dark:text-slate-400">{sub.time}</td>
                       <td className="py-3">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                            sub.status === 'Verified'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : sub.status === 'Under Review'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
+                        <Badge variant={sub.status === 'Verified' ? 'success' : sub.status === 'Under Review' ? 'warning' : 'info'}>
                           {sub.status}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="py-3 text-right">
                         {sub.status !== 'Verified' ? (
                           <button
                             onClick={() => handleApprove(idx, sub.student)}
-                            className="px-2.5 py-1 bg-[#10b981] hover:bg-emerald-600 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
                           >
                             Verify & Award
                           </button>
                         ) : (
-                          <span className="text-gray-400 font-mono text-[11px]">{sub.xp}</span>
+                          <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">{sub.xp}</span>
                         )}
                       </td>
                     </tr>
@@ -242,28 +239,20 @@ const FacultyDashboardPage = () => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Sidebar Column: Recommendations & AI Assistant */}
         <div className="space-y-6">
           {/* Institutional AI Curriculum Recommendations */}
-          <div className="bg-white p-5 rounded-2xl border border-[#e3e8f3] shadow-xs">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">🤖</span>
-              <div>
-                <h3 className="text-sm font-bold text-[#172033]">AI Curriculum Advisor</h3>
-                <p className="text-[11px] text-[#68738a]">RAG-driven feedback on cohort weaknesses</p>
-              </div>
-            </div>
-
-            <div className="space-y-2.5 mt-3">
+          <Card title="AI Curriculum Advisor" subtitle="Curriculum RAG feedback on cohort weaknesses">
+            <div className="space-y-2.5">
               {dashboardData.curriculum_recommendations.map((rec, idx) => (
                 <div
                   key={idx}
-                  className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed"
+                  className="p-3 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-900 dark:text-blue-200 leading-relaxed"
                 >
-                  <div className="font-semibold text-blue-800 mb-0.5">Recommendation #{idx + 1}</div>
+                  <div className="font-semibold text-blue-800 dark:text-blue-300 mb-0.5">Recommendation #{idx + 1}</div>
                   {rec}
                 </div>
               ))}
@@ -274,47 +263,56 @@ const FacultyDashboardPage = () => {
                 setSuccessToast('Requested updated syllabus gap report from AI Mentor.');
                 setTimeout(() => setSuccessToast(''), 3000);
               }}
-              className="w-full mt-4 py-2 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl text-xs font-semibold transition-colors cursor-pointer text-center"
+              className="w-full mt-4 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-xl text-xs font-semibold transition-colors cursor-pointer text-center"
             >
-              Analyze Batch Skill Gaps →
+              Analyze Batch Skill Gaps
             </button>
-          </div>
+          </Card>
 
           {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-[#101a3b] to-[#203264] text-white p-5 rounded-2xl shadow-xs">
+          <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-xs">
             <h3 className="text-sm font-bold mb-1">Faculty Quick Actions</h3>
-            <p className="text-xs text-blue-200/80 mb-4">Fast shortcuts for daily academic workflows</p>
+            <p className="text-xs text-slate-400 mb-4">Fast shortcuts for daily academic workflows</p>
 
             <div className="space-y-2 text-xs">
               <button
                 onClick={() => {
-                  setSuccessToast('New Viva Evaluation form opened.');
+                  setSuccessToast('New Viva Evaluation session initialized.');
                   setTimeout(() => setSuccessToast(''), 2500);
                 }}
-                className="w-full py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-left font-medium flex items-center justify-between cursor-pointer"
+                className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left font-medium flex items-center justify-between cursor-pointer border border-slate-700/60"
               >
-                <span>🎙️ Conduct Online Viva Voce</span>
-                <span>→</span>
+                <span className="flex items-center gap-2">
+                  <Mic className="w-3.5 h-3.5 text-blue-400" />
+                  Conduct Online Viva Voce
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               </button>
               <button
                 onClick={() => {
                   setSuccessToast('Syncing class roster with College ERP...');
                   setTimeout(() => setSuccessToast(''), 2500);
                 }}
-                className="w-full py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-left font-medium flex items-center justify-between cursor-pointer"
+                className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left font-medium flex items-center justify-between cursor-pointer border border-slate-700/60"
               >
-                <span>🔄 Sync Attendance & ERP Data</span>
-                <span>→</span>
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                  Sync Attendance & ERP Data
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               </button>
               <button
                 onClick={() => {
-                  setSuccessToast('Endorsed 12 students to Company Recruitment Portal.');
+                  setSuccessToast('Endorsed students to Company Recruitment Portal.');
                   setTimeout(() => setSuccessToast(''), 3000);
                 }}
-                className="w-full py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-left font-medium flex items-center justify-between cursor-pointer"
+                className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left font-medium flex items-center justify-between cursor-pointer border border-slate-700/60"
               >
-                <span>🌟 Endorse Top Performers to Companies</span>
-                <span>→</span>
+                <span className="flex items-center gap-2">
+                  <Award className="w-3.5 h-3.5 text-amber-400" />
+                  Endorse Candidates to Companies
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               </button>
             </div>
           </div>

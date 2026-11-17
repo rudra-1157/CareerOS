@@ -1,21 +1,27 @@
 import os
 import json
+import logging
 from typing import Optional, Dict, Any, List
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 class GeminiAIService:
     def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY") or settings.GEMINI_API_KEY
         self.client = None
         self._init_client()
 
     def _init_client(self):
-        self.api_key = os.getenv("GEMINI_API_KEY") or settings.GEMINI_API_KEY
-        if self.api_key and self.api_key != "your-gemini-api-key-here":
+        api_key = os.getenv("GEMINI_API_KEY") or settings.GEMINI_API_KEY
+        if api_key:
+            api_key = api_key.strip()
+        
+        if api_key and api_key != "your-gemini-api-key-here" and len(api_key) > 5:
             try:
                 from google import genai
-                self.client = genai.Client(api_key=self.api_key)
+                self.client = genai.Client(api_key=api_key)
             except Exception as e:
+                logger.warning(f"Failed to initialize Google GenAI client: {e}")
                 self.client = None
         else:
             self.client = None
@@ -24,39 +30,93 @@ class GeminiAIService:
         self._init_client()
         return self.client is not None
 
-    def generate_response(self, prompt: str, context: Optional[str] = None) -> str:
+    def generate_chat_response(
+        self,
+        messages: List[Dict[str, str]],
+        system_instruction: str,
+        model: str = "gemini-3.5-flash"
+    ) -> str:
+        """
+        Multi-turn conversational response generator using official google-genai SDK.
+        """
         self._init_client()
         if not self.client:
-            return (
-                "⚠️ Gemini AI is not configured on this server.\n\n"
-                "To enable real-time AI responses, please set `GEMINI_API_KEY` in your environment or `backend/.env` file. "
-                "CareerOS uses Google Gemini 2.5 Flash to provide natural, contextual answers based on your course syllabus and career goals."
-            )
+            raise ValueError("AI service is not configured.")
+
+        from google.genai import types
+
+        # Build contents from message history
+        contents = []
+        for msg in messages:
+            role = "user" if msg.get("role") == "user" else "model"
+            text_content = msg.get("content", "").strip()
+            if text_content:
+                contents.append(
+                    types.Content(
+                        role=role,
+                        parts=[types.Part.from_text(text=text_content)]
+                    )
+                )
+
+        if not contents:
+            raise ValueError("No message content provided for generation.")
+
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=0.7,
+            top_p=0.95,
+        )
 
         try:
-            system_instruction = (
-                "You are CareerOS AI Mentor, an intelligent academic and career assistant for university students. "
-                "Answer questions naturally, clearly, and authoritatively. When institutional context or course materials "
-                "are provided, prioritize syllabus-accurate explanations and provide actionable study tips."
-            )
-            
-            full_prompt = f"{system_instruction}\n\n"
-            if context:
-                full_prompt += f"--- Institutional Syllabus & Knowledge Context ---\n{context}\n-----------------------------------------------\n\n"
-            full_prompt += f"Student Query: {prompt}"
-
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=full_prompt,
+                model=model,
+                contents=contents,
+                config=config
             )
             return response.text or "I processed your request, but received an empty response from Gemini."
         except Exception as e:
-            return f"Error contacting Gemini AI service: {str(e)}. Please check your API key and connection."
+            # Try fallback model if model not found or deprecated
+            if model != "gemini-3.5-flash":
+                try:
+                    response = self.client.models.generate_content(
+                        model="gemini-3.5-flash",
+                        contents=contents,
+                        config=config
+                    )
+                    return response.text or "I processed your request, but received an empty response."
+                except Exception:
+                    pass
+            raise e
+
+    def generate_response(self, prompt: str, context: Optional[str] = None) -> str:
+        self._init_client()
+        if not self.client:
+            return "AI service is not configured."
+
+        system_instruction = (
+            "You are CareerOS AI Mentor, an intelligent academic and career assistant for university students. "
+            "Answer questions naturally, clearly, authoritatively, and thoroughly with helpful examples. "
+            "Format responses using Markdown with code blocks, headings, and bullet points where helpful."
+        )
+
+        messages = []
+        if context:
+            messages.append({
+                "role": "user",
+                "content": f"[Context Information]:\n{context}\n\nPlease use this context to inform your answer."
+            })
+            messages.append({
+                "role": "assistant",
+                "content": "Understood. I will use this context along with my expertise to assist you."
+            })
+
+        messages.append({"role": "user", "content": prompt})
+
+        return self.generate_chat_response(messages, system_instruction=system_instruction)
 
     def analyze_resume_text(self, resume_text: str, target_role: str = "AI/ML Engineer") -> Dict[str, Any]:
         self._init_client()
         if not self.client:
-            # Fallback basic NLP/keyword extraction when Gemini key is not configured
             lower_text = resume_text.lower()
             detected_skills = []
             
@@ -113,13 +173,12 @@ class GeminiAIService:
             """
 
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.5-flash",
                 contents=prompt,
                 config={"response_mime_type": "application/json"}
             )
             return json.loads(response.text)
-        except Exception as e:
-            # Return safe fallback if JSON parsing fails
+        except Exception:
             return {
                 "ats_score": 75,
                 "match_rating": f"Assessed Match (Target: {target_role})",

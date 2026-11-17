@@ -1,382 +1,431 @@
-import React, { useState } from 'react';
-import { initialCodingData } from '../data/initialData';
-import { useModal } from '../context/ModalContext';
-import Card from '../components/common/Card';
-import StatCard from '../components/common/StatCard';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { 
+  Code2, 
+  Swords, 
+  Users, 
+  Trophy, 
+  CheckCircle2, 
+  Flame, 
+  Play, 
+  Zap, 
+  Clock, 
+  Award, 
+  BarChart2, 
+  Sparkles,
+  ArrowRight,
+  ShieldCheck
+} from 'lucide-react';
+import ChallengeLobby from '../components/coding/ChallengeLobby';
+import LiveCodingBattle from '../components/coding/LiveCodingBattle';
+import FriendsTab from '../components/coding/FriendsTab';
+import LeaderboardsTab from '../components/coding/LeaderboardsTab';
+import PracticeTab from '../components/coding/PracticeTab';
+import MyProgressTab from '../components/coding/MyProgressTab';
 import Button from '../components/common/Button';
-import Badge from '../components/common/Badge';
-import Toast from '../components/common/Toast';
+import Avatar from '../components/common/Avatar';
+import { useAuth } from '../context/AuthContext';
+import { challengeService, demoService } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 const CodingPage = () => {
-  const { openModal } = useModal();
-  const [selectedChallenge, setSelectedChallenge] = useState(initialCodingData.todaysChallenge);
-  const [activeLanguage, setActiveLanguage] = useState('python');
-  const [code, setCode] = useState(initialCodingData.todaysChallenge.starterCode.python);
-  const [testResults, setTestResults] = useState(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [activeTab, setActiveTab] = useState('description'); // 'description' | 'testcases' | 'result'
-  const [filterDifficulty, setFilterDifficulty] = useState('All');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { currentUser } = useAuth();
+  const { addToast } = useToast();
 
-  const challengesList = initialCodingData.challenges || [];
-  const stats = initialCodingData.stats || {};
+  const urlTab = searchParams.get('tab');
+  const urlRoom = searchParams.get('room');
 
-  const handleSelectChallenge = (ch) => {
-    // If selected today's challenge or listed challenge
-    const fullChallenge = {
-      ...initialCodingData.todaysChallenge,
-      id: ch.id,
-      title: ch.title,
-      difficulty: ch.difficulty,
-      xp: `+${ch.xp} XP`,
-      category: ch.category
-    };
-    setSelectedChallenge(fullChallenge);
-    setCode(fullChallenge.starterCode?.[activeLanguage] || `// Solution for ${ch.title}\ndef solve():\n    pass`);
-    setTestResults(null);
-    setActiveTab('description');
-  };
+  // Navigation: overview, arena, friends, leaderboards, practice, progress
+  const [activeTab, setActiveTab] = useState(urlTab || (urlRoom ? 'arena' : 'overview'));
+  const [battleRoom, setBattleRoom] = useState(null);
+  const [initialRoomCode, setInitialRoomCode] = useState(urlRoom || null);
 
-  const handleLanguageChange = (lang) => {
-    setActiveLanguage(lang);
-    if (selectedChallenge.starterCode?.[lang]) {
-      setCode(selectedChallenge.starterCode[lang]);
+  useEffect(() => {
+    if (urlRoom) {
+      setActiveTab('arena');
+      setInitialRoomCode(urlRoom);
     }
+  }, [urlRoom]);
+
+  const handleStartBattle = (room) => {
+    setBattleRoom(room);
   };
 
-  const handleRunCode = () => {
-    setIsRunning(true);
-    setTimeout(() => {
-      setIsRunning(false);
-      setTestResults({
-        passed: 3,
-        total: 3,
-        runtime: "42 ms",
-        memory: "16.4 MB",
-        status: "Accepted",
-        output: "Test Case 1: [0, 1] (Match)\nTest Case 2: [1, 2] (Match)\nTest Case 3: [0, 1] (Match)"
+  const handleExitBattle = () => {
+    setBattleRoom(null);
+    setInitialRoomCode(null);
+    setSearchParams({});
+    setActiveTab('overview');
+  };
+
+  const handleChallengePeer = (peer) => {
+    setActiveTab('arena');
+    challengeService.createBattle({
+      category: 'Algorithms',
+      difficulty: 'Medium',
+      invited_friend_id: peer.id
+    }).then(res => {
+      setInitialRoomCode(res.room_code);
+      addToast({
+        type: 'success',
+        title: 'Duel Created',
+        message: `Battle room created with ${peer.name}. Code: ${res.room_code}`
       });
-      setActiveTab('result');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    }, 800);
+    }).catch(() => {
+      // Handled
+    });
   };
-
-  const handleSubmitCode = () => {
-    setIsRunning(true);
-    setTimeout(() => {
-      setIsRunning(false);
-      setTestResults({
-        passed: 3,
-        total: 3,
-        runtime: "38 ms (Beats 94.2% of submissions)",
-        memory: "16.2 MB",
-        status: "Accepted",
-        output: "All 28 hidden test cases passed successfully!\n+100 XP awarded to your Skill Passport."
-      });
-      setActiveTab('result');
-      openModal(
-        "🎉 Challenge Solved!",
-        `Congratulations! You solved "${selectedChallenge.title}".\n\n• XP Awarded: +100 XP\n• Speed: 38 ms (Beats 94.2%)\n• Evidence added to your Skill Passport under DSA & Problem Solving.`
-      );
-    }, 900);
-  };
-
-  const filteredChallenges = filterDifficulty === 'All'
-    ? challengesList
-    : challengesList.filter(c => c.difficulty.toLowerCase() === filterDifficulty.toLowerCase());
 
   return (
-    <div className="space-y-6">
-      <Toast
-        show={showToast}
-        message="Code executed! All test cases passed."
-        type="success"
-        onClose={() => setShowToast(false)}
-      />
-
-      {/* Header Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Problems Solved"
-          value={stats.solvedCount || 126}
-          subtitle="34 this month"
-          icon="✅"
-          color="green"
-        />
-        <StatCard
-          title="Batch Ranking"
-          value={stats.batchRank || "#17"}
-          subtitle={stats.percentile || "Top 8% of CSE"}
-          icon="🏆"
-          color="blue"
-        />
-        <StatCard
-          title="Total Coding XP"
-          value={stats.totalXP || "4,250 XP"}
-          subtitle="+450 XP this month"
-          icon="⚡"
-          color="purple"
-        />
-        <StatCard
-          title="Active Streak"
-          value={stats.streak || "12 Days"}
-          subtitle="Daily Practice"
-          icon="🔥"
-          color="orange"
-        />
-      </div>
-
-      {/* Main Coding Layout: Left Side Problem & Editor vs Right Challenges List */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left 2 Cols: Coding Arena Workspace */}
-        <div className="lg:col-span-2 space-y-4">
-          <Card padding="p-0" className="overflow-hidden border border-[#d9deea]">
-            {/* Editor Top Bar */}
-            <div className="bg-[#101a3b] text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-[#233567]">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">💻</span>
-                <div>
-                  <h3 className="text-base font-extrabold text-white tracking-tight">{selectedChallenge.title}</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <Badge variant={selectedChallenge.difficulty === 'Easy' ? 'success' : selectedChallenge.difficulty === 'Medium' ? 'warning' : 'danger'}>
-                      {selectedChallenge.difficulty}
-                    </Badge>
-                    <span className="text-xs text-[#9eb0d7] font-semibold">{selectedChallenge.xp}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Language Selector */}
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-[#9eb0d7] font-medium">Language:</label>
-                <select
-                  value={activeLanguage}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="bg-[#1b2b5a] text-white border border-[#334b82] rounded-lg text-xs px-2.5 py-1 focus:outline-none focus:border-[#4f78ff]"
-                >
-                  <option value="python">Python 3.11</option>
-                  <option value="javascript">JavaScript (Node 20)</option>
-                  <option value="cpp">C++ 20</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Problem Tab Selector */}
-            <div className="bg-[#f8f9fc] border-b border-[#e5e9f1] px-5 py-2 flex gap-4 text-xs font-bold text-[#68738a]">
-              <button
-                onClick={() => setActiveTab('description')}
-                className={`pb-1 transition-all ${
-                  activeTab === 'description'
-                    ? 'text-[#315bdc] border-b-2 border-[#315bdc]'
-                    : 'hover:text-[#172033]'
-                }`}
-              >
-                Problem Description
-              </button>
-              <button
-                onClick={() => setActiveTab('testcases')}
-                className={`pb-1 transition-all ${
-                  activeTab === 'testcases'
-                    ? 'text-[#315bdc] border-b-2 border-[#315bdc]'
-                    : 'hover:text-[#172033]'
-                }`}
-              >
-                Sample Test Cases
-              </button>
-              <button
-                onClick={() => setActiveTab('result')}
-                className={`pb-1 transition-all ${
-                  activeTab === 'result'
-                    ? 'text-[#315bdc] border-b-2 border-[#315bdc]'
-                    : 'hover:text-[#172033]'
-                }`}
-              >
-                Execution Result {testResults && '✓'}
-              </button>
-            </div>
-
-            {/* Tab Contents: Problem Description / Test Cases / Result */}
-            <div className="p-5 bg-white border-b border-[#e5e9f1] text-sm">
-              {activeTab === 'description' && (
-                <div className="space-y-3">
-                  <p className="text-[#334155] leading-relaxed whitespace-pre-line font-normal">
-                    {selectedChallenge.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {(selectedChallenge.tags || ["Array", "Hash Table"]).map((t, idx) => (
-                      <span key={idx} className="text-xs bg-[#f1f4fa] text-[#475569] px-2.5 py-1 rounded-md font-medium">
-                        🏷️ {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'testcases' && (
-                <div className="space-y-2.5">
-                  {(selectedChallenge.testCases || [
-                    { input: "nums = [2,7,11,15], target = 9", expected: "[0, 1]", status: "Passed" },
-                    { input: "nums = [3,2,4], target = 6", expected: "[1, 2]", status: "Passed" }
-                  ]).map((tc, idx) => (
-                    <div key={idx} className="p-3 bg-[#f8f9fc] rounded-xl border border-[#e5e9f1] text-xs font-mono">
-                      <div className="text-[#68738a] font-bold mb-1">Case {idx + 1}:</div>
-                      <div className="text-[#172033]">Input: {tc.input}</div>
-                      <div className="text-[#15966b]">Expected: {tc.expected}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {activeTab === 'result' && (
-                <div className="space-y-3">
-                  {testResults ? (
-                    <div className="p-4 bg-[#e7f7f0] border border-[#a3e0c7] rounded-xl text-xs space-y-2">
-                      <div className="flex justify-between items-center font-bold text-[#11825c] text-sm">
-                        <span>✓ Status: {testResults.status}</span>
-                        <span>Runtime: {testResults.runtime}</span>
-                      </div>
-                      <div className="font-mono bg-white p-3 rounded-lg border border-[#a3e0c7] text-[#172033] whitespace-pre-line">
-                        {testResults.output}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-[#68738a]">Run your code or submit to view test runner feedback.</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Code Textarea Editor UI */}
-            <div className="bg-[#0f172a] p-4 text-white font-mono text-sm">
-              <div className="text-xs text-[#94a3b8] mb-2 flex justify-between items-center">
-                <span>// Write your solution below:</span>
-                <button
-                  onClick={() => setCode(selectedChallenge.starterCode?.[activeLanguage] || '')}
-                  className="text-[11px] text-[#38bdf8] hover:underline font-mono"
-                >
-                  Reset Template
-                </button>
-              </div>
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                rows={12}
-                spellCheck="false"
-                className="w-full bg-transparent text-[#e2e8f0] font-mono text-sm leading-relaxed focus:outline-none resize-y"
-              />
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="bg-[#f8f9fc] px-5 py-3.5 flex items-center justify-between border-t border-[#e5e9f1]">
-              <span className="text-xs text-[#68738a] font-medium">
-                Auto-saved • Ready for evaluation
-              </span>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="md"
-                  disabled={isRunning}
-                  onClick={handleRunCode}
-                  className="font-bold text-xs"
-                >
-                  {isRunning ? 'Running...' : '▶ Run Code'}
-                </Button>
-                <Button
-                  variant="primary"
-                  size="md"
-                  disabled={isRunning}
-                  onClick={handleSubmitCode}
-                  className="font-bold text-xs shadow-md"
-                >
-                  {isRunning ? 'Evaluating...' : '🚀 Submit Solution'}
-                </Button>
-              </div>
-            </div>
-          </Card>
+    <div className="space-y-6 animate-fade-in pb-12">
+      {/* Hero Header */}
+      <div 
+        className="rounded-2xl p-6 md:p-8 border shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        style={{
+          backgroundColor: 'var(--color-card-bg)',
+          borderColor: 'var(--color-card-border)',
+          color: 'var(--color-text-main)'
+        }}
+      >
+        <div className="space-y-2 max-w-2xl">
+          <div 
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-semibold"
+            style={{ backgroundColor: 'var(--color-badge-bg)', color: 'var(--color-primary-accent)' }}
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            <span>Competitive Programming & Peer Duels</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Coding Arena</h1>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            Practice algorithmic foundations, challenge peers to real-time 1v1 duels with server evaluation, climb institutional leaderboards, and build your verified skill passport.
+          </p>
         </div>
 
-        {/* Right Sidebar: Challenge Directory & Friend Arena */}
-        <div className="space-y-6">
-          
-          {/* Friend Challenge Card */}
-          <div className="bg-gradient-to-br from-[#101a3b] to-[#253d82] text-white rounded-2xl p-5 shadow-sm space-y-3 border border-[#233567]">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#9eb0d7]">⚔️ Friend Challenge</span>
-              <Badge variant="warning">{initialCodingData.friendChallenge.badge}</Badge>
+        {/* Quick User Snapshot Pill */}
+        <div 
+          className="rounded-xl p-3.5 border text-xs flex items-center gap-4 shrink-0 shadow-2xs"
+          style={{ backgroundColor: 'var(--color-secondary-bg)', borderColor: 'var(--color-card-border)' }}
+        >
+          <Avatar src={currentUser?.avatar_url} name={currentUser?.name || 'Developer'} size="md" status="online" />
+          <div className="space-y-0.5">
+            <span className="font-semibold block">{currentUser?.name || 'Developer'}</span>
+            <div className="flex items-center gap-2 text-[11px] font-mono">
+              <span style={{ color: 'var(--color-primary-accent)' }}>{currentUser?.learning_xp || 1450} XP</span>
+              <span>•</span>
+              <span className="text-amber-500 flex items-center gap-0.5">
+                <Flame className="w-3 h-3 fill-current" />
+                14d streak
+              </span>
             </div>
-            <h4 className="text-base font-extrabold text-white">
-              {initialCodingData.friendChallenge.title}
-            </h4>
-            <p className="text-xs text-[#dce5ff]">
-              Problem: <b>{initialCodingData.friendChallenge.problem}</b>
-            </p>
-            <Button
-              variant="secondary"
-              size="sm"
-              fullWidth
-              onClick={() => openModal(initialCodingData.friendChallenge.title, "Head-to-head friend battle mode: Both participants receive the same problem statement and 20-minute countdown. The system measures accuracy, time complexity, and memory efficiency.")}
-              className="bg-white text-[#101a3b] hover:bg-[#edf2ff] font-bold text-xs"
+          </div>
+        </div>
+      </div>
+
+      {/* Main 6 Navigation Tabs */}
+      {!battleRoom && (
+        <div 
+          className="flex items-center gap-2 p-1.5 rounded-xl border overflow-x-auto shadow-2xs"
+          style={{
+            backgroundColor: 'var(--color-card-bg)',
+            borderColor: 'var(--color-card-border)'
+          }}
+        >
+          {[
+            { id: 'overview', label: 'Overview', icon: Zap },
+            { id: 'arena', label: 'Challenge Arena (1v1)', icon: Swords },
+            { id: 'practice', label: 'Practice Problems', icon: Code2 },
+            { id: 'friends', label: 'Friends Network', icon: Users },
+            { id: 'leaderboards', label: 'Leaderboards', icon: Trophy },
+            { id: 'progress', label: 'My Progress', icon: BarChart2 }
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setSearchParams({ tab: tab.id });
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  isActive ? 'shadow-xs' : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: isActive ? 'var(--color-primary-accent)' : 'transparent',
+                  color: isActive ? '#FFFFFF' : 'var(--color-text-main)'
+                }}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* RENDER ACTIVE TAB */}
+
+      {/* 1. OVERVIEW TAB */}
+      {activeTab === 'overview' && !battleRoom && (
+        <div className="space-y-6 animate-fade-in">
+          {/* 4 Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div 
+              className="p-5 rounded-2xl border shadow-sm space-y-1"
+              style={{ backgroundColor: 'var(--color-card-bg)', borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
             >
-              Enter Match Room
-            </Button>
+              <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                Total Career XP
+              </span>
+              <div className="text-2xl font-bold font-mono" style={{ color: 'var(--color-primary-accent)' }}>
+                {currentUser?.learning_xp || 1450} XP
+              </div>
+              <span className="text-[11px] text-emerald-500 font-medium block">
+                Top 12% in CSE Department
+              </span>
+            </div>
+
+            <div 
+              className="p-5 rounded-2xl border shadow-sm space-y-1"
+              style={{ backgroundColor: 'var(--color-card-bg)', borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                Problems Solved
+              </span>
+              <div className="text-2xl font-bold font-mono">
+                48 Solved
+              </div>
+              <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                22 Easy • 19 Med • 7 Hard
+              </span>
+            </div>
+
+            <div 
+              className="p-5 rounded-2xl border shadow-sm space-y-1"
+              style={{ backgroundColor: 'var(--color-card-bg)', borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                1v1 Duel Record
+              </span>
+              <div className="text-2xl font-bold font-mono text-emerald-500">
+                12 Wins / 4 Losses
+              </div>
+              <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                75% Win Rate
+              </span>
+            </div>
+
+            <div 
+              className="p-5 rounded-2xl border shadow-sm space-y-1"
+              style={{ backgroundColor: 'var(--color-card-bg)', borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                Daily Solve Streak
+              </span>
+              <div className="text-2xl font-bold font-mono text-amber-500 flex items-center gap-1.5">
+                <Flame className="w-5 h-5 fill-current" />
+                14 Days
+              </div>
+              <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                Solve today to keep streak active
+              </span>
+            </div>
           </div>
 
-          {/* Challenge Directory with Filter */}
-          <Card
-            title="Curated Challenges"
-            subtitle="Campus placement favorite problems"
-          >
-            {/* Filter Pills */}
-            <div className="flex gap-1.5 mb-3.5">
-              {['All', 'Easy', 'Medium', 'Hard'].map((diff) => (
-                <button
-                  key={diff}
-                  onClick={() => setFilterDifficulty(diff)}
-                  className={`text-xs px-2.5 py-1 rounded-lg font-bold transition-all ${
-                    filterDifficulty === diff
-                      ? 'bg-[#315bdc] text-white'
-                      : 'bg-[#f1f4fa] text-[#68738a] hover:bg-[#e2e8f0]'
-                  }`}
+          {/* Daily Challenge Spotlight & Quick Duel Action */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Daily Challenge Card (2 Cols) */}
+            <div 
+              className="md:col-span-2 rounded-2xl p-6 border shadow-sm flex flex-col justify-between space-y-5"
+              style={{
+                backgroundColor: 'var(--color-card-bg)',
+                borderColor: 'var(--color-card-border)',
+                color: 'var(--color-text-main)'
+              }}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="px-2.5 py-1 rounded-full text-xs font-mono font-bold"
+                      style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B' }}
+                    >
+                      DAILY CHALLENGE
+                    </span>
+                    <span 
+                      className="px-2 py-0.5 rounded text-[10px] font-mono font-bold"
+                      style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10B981' }}
+                    >
+                      MEDIUM
+                    </span>
+                  </div>
+
+                  <span className="text-xs font-mono flex items-center gap-1" style={{ color: 'var(--color-text-muted)' }}>
+                    <Clock className="w-3.5 h-3.5" />
+                    Resets in 8h 42m
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-bold tracking-tight">
+                  Sequential Element Accumulator
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  Construct an algorithm that processes a series of numeric inputs, filters elements based on a threshold constraint, and calculates the cumulative prefix sum sequence. Evaluated on execution runtime and memory efficiency.
+                </p>
+
+                <div className="flex items-center gap-4 text-xs font-mono pt-1">
+                  <span style={{ color: 'var(--color-primary-accent)' }}>+80 XP Reward</span>
+                  <span>•</span>
+                  <span>+1 Streak Milestone</span>
+                  <span>•</span>
+                  <span>Verified Skill Badge Credit</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-3 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
+                <Button 
+                  variant="primary" 
+                  size="md"
+                  onClick={() => setActiveTab('practice')}
                 >
-                  {diff}
-                </button>
-              ))}
+                  <Play className="w-4 h-4 mr-1.5 fill-current" />
+                  Solve Problem
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="md"
+                  onClick={() => setActiveTab('arena')}
+                >
+                  <Swords className="w-4 h-4 mr-1.5" />
+                  Duel a Peer on this Problem
+                </Button>
+              </div>
             </div>
 
-            <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
-              {filteredChallenges.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleSelectChallenge(item)}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                    selectedChallenge.title === item.title
-                      ? 'bg-[#edf2ff] border-[#315bdc] shadow-sm'
-                      : 'bg-[#f8f9fc] border-[#e5e9f1] hover:border-[#ccd6e8]'
-                  }`}
+            {/* Quick 1v1 Battle Launcher (1 Col) */}
+            <div 
+              className="rounded-2xl p-6 border shadow-sm flex flex-col justify-between space-y-5"
+              style={{
+                backgroundColor: 'var(--color-card-bg)',
+                borderColor: 'var(--color-card-border)',
+                color: 'var(--color-text-main)'
+              }}
+            >
+              <div className="space-y-3">
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--color-secondary-bg)', color: 'var(--color-primary-accent)' }}
                 >
-                  <div>
-                    <div className="text-xs font-bold text-[#172033] flex items-center gap-1.5">
-                      <span>{item.solved ? '✅' : '⚪'}</span>
-                      <span>{item.title}</span>
-                    </div>
-                    <div className="text-[11px] text-[#68738a] mt-0.5">
-                      {item.category} • Accuracy {item.accuracy}
+                  <Swords className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold">Challenge a Peer</h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  Create an instant 1v1 battle room code and share it with a classmate or invite a demo bot to practice live under contest conditions.
+                </p>
+              </div>
+
+              <Button 
+                variant="primary" 
+                size="md" 
+                className="w-full justify-center"
+                onClick={() => setActiveTab('arena')}
+              >
+                Open Challenge Arena
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Recent Duel History Preview */}
+          <div 
+            className="rounded-2xl p-6 border shadow-sm space-y-4"
+            style={{
+              backgroundColor: 'var(--color-card-bg)',
+              borderColor: 'var(--color-card-border)',
+              color: 'var(--color-text-main)'
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold uppercase font-mono tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                Recent Coding Duel Activity
+              </h3>
+              <button 
+                onClick={() => setActiveTab('progress')}
+                className="text-xs font-semibold hover:underline"
+                style={{ color: 'var(--color-primary-accent)' }}
+              >
+                View Analytics
+              </button>
+            </div>
+
+            <div className="divide-y text-xs font-mono" style={{ borderColor: 'var(--color-card-border)' }}>
+              {[
+                { opponent: 'Aarav Sharma', result: 'Won', problem: 'Prefix Accumulator', runtime: '12m 40s', date: 'Yesterday', xp: '+50 XP' },
+                { opponent: 'Priya Iyer', result: 'Won', problem: 'Balanced Token Checker', runtime: '18m 10s', date: '3 days ago', xp: '+50 XP' },
+                { opponent: 'Rohan Mehta', result: 'Lost', problem: 'Matrix Path Cost', runtime: '25m 00s', date: '5 days ago', xp: '+15 XP' }
+              ].map((b, idx) => (
+                <div key={idx} className="py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span 
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        b.result === 'Won' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'
+                      }`}
+                    >
+                      {b.result}
+                    </span>
+                    <div>
+                      <span className="font-semibold block font-sans">vs {b.opponent}</span>
+                      <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{b.problem}</span>
                     </div>
                   </div>
+
                   <div className="text-right">
-                    <Badge variant={item.difficulty === 'Easy' ? 'success' : item.difficulty === 'Medium' ? 'warning' : 'danger'}>
-                      {item.difficulty}
-                    </Badge>
-                    <div className="text-[10px] text-[#315bdc] font-bold mt-1">+{item.xp} XP</div>
+                    <span className="font-bold text-emerald-500 block">{b.xp}</span>
+                    <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{b.runtime} • {b.date}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* 2. CHALLENGE ARENA (1v1) TAB */}
+      {activeTab === 'arena' && !battleRoom && (
+        <ChallengeLobby
+          initialRoomCode={initialRoomCode}
+          onStartBattle={handleStartBattle}
+        />
+      )}
+
+      {/* LIVE BATTLE IN PROGRESS */}
+      {battleRoom && (
+        <LiveCodingBattle
+          battleRoom={battleRoom}
+          onExitBattle={handleExitBattle}
+        />
+      )}
+
+      {/* 3. PRACTICE TAB */}
+      {activeTab === 'practice' && !battleRoom && (
+        <PracticeTab />
+      )}
+
+      {/* 4. FRIENDS NETWORK TAB */}
+      {activeTab === 'friends' && !battleRoom && (
+        <FriendsTab onChallengeFriend={handleChallengePeer} />
+      )}
+
+      {/* 5. LEADERBOARDS TAB */}
+      {activeTab === 'leaderboards' && !battleRoom && (
+        <LeaderboardsTab onChallengeUser={handleChallengePeer} />
+      )}
+
+      {/* 6. MY PROGRESS TAB */}
+      {activeTab === 'progress' && !battleRoom && (
+        <MyProgressTab />
+      )}
     </div>
   );
 };

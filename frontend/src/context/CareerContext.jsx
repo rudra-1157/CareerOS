@@ -53,7 +53,7 @@ export const CareerProvider = ({ children }) => {
                 skill_subtitle: "Evidence-based profile",
                 career_readiness: `${data.stats.career_readiness ?? 0}%`,
                 career_subtitle: `Target: ${data.student?.target_role || "Not set"}`,
-                streak_days: `${data.stats.streak_days ?? 0} 🔥`,
+                streak_days: `${data.stats.streak_days ?? 0}`,
                 streak_subtitle: "days continuous practice",
                 coding_score: `${data.stats.coding_score ?? 0}%`,
                 interview_readiness: `${data.stats.interview_readiness ?? 0}%`,
@@ -75,6 +75,9 @@ export const CareerProvider = ({ children }) => {
           recommendedActions: Array.isArray(data.recommended_actions) && data.recommended_actions.length > 0
             ? data.recommended_actions
             : prev.recommendedActions,
+
+          // AI Recommendations if provided
+          aiRecommendations: data.ai_recommendations || prev.aiRecommendations,
         }));
       }
     } catch (err) {
@@ -85,7 +88,7 @@ export const CareerProvider = ({ children }) => {
     }
   }, []);
 
-  // Refresh from backend — exportable for use in any page
+  // Refresh from backend: exportable for use in any page
   const refreshDashboard = useCallback(() => {
     const token = localStorage.getItem('careeros_token') || sessionStorage.getItem('careeros_token');
     if (token) {
