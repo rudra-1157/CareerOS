@@ -34,12 +34,14 @@ export const CareerProvider = ({ children }) => {
                 github_username: data.student.github_username || "",
                 linkedin_url: data.student.linkedin_url || "",
                 portfolio_url: data.student.portfolio_url || "",
-                initials: (data.student.name || "")
-                  .split(" ")
-                  .map(w => w[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase() || "?",
+                initials: typeof data.student?.name === 'string'
+                  ? data.student.name
+                      .split(" ")
+                      .map(w => w[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase() || "?"
+                  : "?",
                 profile_completion: data.student.profile_completion || 0,
               }
             : prev.profile,

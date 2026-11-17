@@ -393,4 +393,72 @@ export const demoService = {
   }
 };
 
+// ─── Job Portal & Companies ───────────────────────────────────────────────────
+export const jobsService = {
+  // Companies
+  getCompanies: async (domain = '', search = '') => {
+    const params = new URLSearchParams();
+    if (domain) params.append('domain', domain);
+    if (search) params.append('search', search);
+    const response = await apiClient.get(`/companies${params.toString() ? '?' + params : ''}`);
+    return response.data;
+  },
+  getCompany: async (id) => {
+    const response = await apiClient.get(`/companies/${id}`);
+    return response.data;
+  },
+  saveCompany: async (companyId) => {
+    const response = await apiClient.post(`/companies/${companyId}/save`);
+    return response.data;
+  },
+  getSavedCompanies: async () => {
+    const response = await apiClient.get('/companies/saved');
+    return response.data;
+  },
+
+  // Jobs
+  getJobs: async (domain = '', search = '', company_id = null) => {
+    const params = new URLSearchParams();
+    if (domain) params.append('domain', domain);
+    if (search) params.append('search', search);
+    if (company_id) params.append('company_id', company_id);
+    const response = await apiClient.get(`/jobs${params.toString() ? '?' + params : ''}`);
+    return response.data;
+  },
+  getJob: async (jobId) => {
+    const response = await apiClient.get(`/jobs/${jobId}`);
+    return response.data;
+  },
+  getJobMatch: async (jobId) => {
+    const response = await apiClient.get(`/jobs/${jobId}/match`);
+    return response.data;
+  },
+  getRecommendedJobs: async () => {
+    const response = await apiClient.get('/jobs/recommended');
+    return response.data;
+  },
+
+  // Applications
+  applyForJob: async (jobId, resumeName = '') => {
+    const response = await apiClient.post(`/jobs/${jobId}/apply`, { resume_name: resumeName });
+    return response.data;
+  },
+  getMyApplications: async () => {
+    const response = await apiClient.get('/applications/my');
+    return response.data;
+  },
+
+  // Recruiter
+  getRecruiterJobs: async () => {
+    const response = await apiClient.get('/recruiter/jobs');
+    return response.data;
+  },
+  getRecruiterApplications: async (jobId = null) => {
+    const params = jobId ? `?job_id=${jobId}` : '';
+    const response = await apiClient.get(`/recruiter/applications${params}`);
+    return response.data;
+  },
+};
+
 export default apiClient;
+

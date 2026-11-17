@@ -320,7 +320,7 @@ const InterviewPage = () => {
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[11px] text-slate-400">
-                    {userAnswer.trim().split(/\s+/).filter(Boolean).length} words written
+                    {typeof userAnswer === 'string' ? userAnswer.trim().split(/\s+/).filter(Boolean).length : 0} words written
                   </span>
                   <div className="flex items-center gap-2">
                     <Button

@@ -12,6 +12,6 @@ from app.models.roadmap import Roadmap, RoadmapItem, RoadmapTask
 from app.models.achievement import Achievement, StudentAchievement
 from app.models.assignment import Assignment, AssignmentSubmission
 from app.models.assessment import Assessment, AssessmentResult
-from app.models.company import Company, CandidateProfile
+from app.models.company import Company, Job, JobApplication, SavedCompany, CandidateProfile
 from app.models.notification import Notification, AuditLog
 from app.models.social import Friendship, CodingBattle, BattleSubmission

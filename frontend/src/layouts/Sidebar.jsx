@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   FolderGit2,
   Building2,
+  Briefcase,
   Settings,
   GraduationCap,
   ShieldAlert,
@@ -43,7 +44,7 @@ const studentNavSections = [
       { path: '/roadmap', label: 'Personalized Roadmap', icon: Map, tag: 'Milestones' },
       { path: '/passport', label: 'Skill Passport', icon: ShieldCheck, tag: 'Verified Skills' },
       { path: '/projects', label: 'Capstone Projects', icon: FolderGit2, tag: 'Attested Artifacts' },
-      { path: '/companies', label: 'Recruiter Discovery', icon: Building2, tag: 'Campus Drives' },
+      { path: '/jobs', label: 'Job Portal', icon: Briefcase, tag: 'Companies & Jobs' },
     ]
   },
   {

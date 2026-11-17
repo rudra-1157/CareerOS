@@ -333,7 +333,7 @@ const ProfilePage = () => {
                 {profile.name || currentUser?.name || 'Developer Name'}
               </h2>
               <p className="text-xs font-mono mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                @{profile.username || (profile.email ? profile.email.split('@')[0] : 'developer')}
+                @{profile.username || (typeof profile.email === 'string' && profile.email.includes('@') ? profile.email.split('@')[0] : 'developer')}
               </p>
 
               {profile.career_goal && (

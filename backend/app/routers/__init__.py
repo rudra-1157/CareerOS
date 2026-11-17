@@ -13,6 +13,7 @@ from app.routers.challenges import router as challenges_router
 from app.routers.notifications import router as notifications_router
 from app.routers.external import router as external_router
 from app.routers.demo import router as demo_router
+from app.routers.jobs import router as jobs_router
 
 __all__ = [
     "auth_router",
@@ -29,5 +30,6 @@ __all__ = [
     "challenges_router",
     "notifications_router",
     "external_router",
-    "demo_router"
+    "demo_router",
+    "jobs_router"
 ]

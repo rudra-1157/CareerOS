@@ -66,7 +66,11 @@ const ProjectsPage = () => {
         title: newProject.title.trim(),
         category: newProject.category,
         description: newProject.desc.trim(),
-        tech_stack: newProject.techStack.split(',').map(s => s.trim()).filter(Boolean),
+        tech_stack: typeof newProject.techStack === 'string'
+          ? newProject.techStack.split(',').map(s => s.trim()).filter(Boolean)
+          : Array.isArray(newProject.techStack)
+            ? newProject.techStack
+            : [],
         github_url: newProject.githubUrl.trim(),
         demo_url: newProject.demoUrl.trim(),
         metrics: newProject.metrics.trim()

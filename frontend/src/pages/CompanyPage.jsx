@@ -31,21 +31,58 @@ const CompanyPage = () => {
   const stats = initialCompanyData.stats || {};
 
   const handleViewCandidate = (cand) => {
+    if (!cand) return;
+    const name = cand.name || 'Candidate';
+    const role = cand.targetRole || cand.target_role || 'Not specified';
+    const degree = cand.degree || 'Not specified';
+    const readiness = cand.readiness || 0;
+    const codingScore = cand.codingScore || cand.coding_solved || 0;
+    const projectsCount = cand.projectsCount || cand.projects_count || 0;
+    const commits = cand.githubCommits || 0;
+    const badges = Array.isArray(cand.verifiedBadges)
+      ? cand.verifiedBadges.join(', ')
+      : typeof cand.verifiedBadges === 'string'
+        ? cand.verifiedBadges
+        : 'None';
+    
+    const skillsList = Array.isArray(cand.skills)
+      ? cand.skills
+      : typeof cand.skills === 'string'
+        ? cand.skills.split(',').map(s => ({ name: s.trim(), score: 80, verified: true }))
+        : [];
+
+    const skillsText = skillsList.length > 0
+      ? skillsList.map(s => `  - ${s.name || s}: ${s.score || 'Verified'} (${s.verified ? 'Faculty Verified' : 'In Progress'})`).join('\n')
+      : '  - No verified skills recorded';
+
     openModal(
-      `Candidate Dossier: ${cand.name} (${cand.targetRole})`,
-      `• Academic Degree: ${cand.degree}\n• Overall Placement Readiness: ${cand.readiness}%\n• Coding Arena Benchmark: ${cand.codingScore}\n• Verified Projects: ${cand.projectsCount} (Reviewed by Faculty)\n• GitHub Annual Activity: ${cand.githubCommits} commits\n• Earned Badges: ${cand.verifiedBadges?.join(', ')}\n• Verified Skill Scores:\n${cand.skills.map(s => `  - ${s.name}: ${s.score} (${s.verified ? 'Faculty Verified' : 'In Progress'})`).join('\n')}`
+      `Candidate Dossier: ${name} (${role})`,
+      `• Academic Degree: ${degree}\n• Overall Placement Readiness: ${readiness}%\n• Coding Arena Benchmark: ${codingScore}\n• Verified Projects: ${projectsCount} (Reviewed by Faculty)\n• GitHub Annual Activity: ${commits} commits\n• Earned Badges: ${badges}\n• Verified Skill Scores:\n${skillsText}`
     );
   };
 
-  const filteredCandidates = candidates.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          c.targetRole.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          c.degree.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCandidates = (Array.isArray(candidates) ? candidates : []).filter(c => {
+    if (!c) return false;
+    const name = typeof c.name === 'string' ? c.name.toLowerCase() : '';
+    const role = typeof c.targetRole === 'string' ? c.targetRole.toLowerCase() : (typeof c.target_role === 'string' ? c.target_role.toLowerCase() : '');
+    const degree = typeof c.degree === 'string' ? c.degree.toLowerCase() : '';
+    const search = searchTerm.toLowerCase();
+
+    const matchesSearch = !search || name.includes(search) || role.includes(search) || degree.includes(search);
+
+    const skillsList = Array.isArray(c.skills)
+      ? c.skills
+      : typeof c.skills === 'string'
+        ? c.skills.split(',').map(s => ({ name: s.trim() }))
+        : [];
 
     const matchesSkill = selectedSkillFilter === 'All' ||
-                         c.skills.some(s => s.name.toLowerCase().includes(selectedSkillFilter.toLowerCase()));
+                         skillsList.some(s => (s.name || s || '').toString().toLowerCase().includes(selectedSkillFilter.toLowerCase()));
 
-    const matchesReadiness = c.readiness >= minReadiness;
+    const readinessNum = typeof c.readiness === 'number'
+      ? c.readiness
+      : Number(String(c.readiness || '0').replace('%', '')) || 0;
+    const matchesReadiness = readinessNum >= minReadiness;
 
     return matchesSearch && matchesSkill && matchesReadiness;
   });
@@ -175,19 +212,19 @@ const CompanyPage = () => {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Avatar
-                    initials={cand.initials}
-                    name={cand.name}
+                    initials={cand.initials || (typeof cand.name === 'string' ? cand.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?')}
+                    name={cand.name || 'Candidate'}
                     size="lg"
                     className="font-bold text-white bg-slate-900 dark:bg-slate-800 border border-slate-700"
                   />
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{cand.name}</h3>
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">{cand.targetRole}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{cand.degree}</p>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{cand.name || 'Anonymous Student'}</h3>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">{cand.targetRole || cand.target_role || 'General Engineering'}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{cand.degree || 'B.Tech'}</p>
                   </div>
                 </div>
                 <Badge variant={cand.status === 'Available for Internship' ? 'success' : 'info'}>
-                  {cand.status.split(' ')[0]}
+                  {typeof cand.status === 'string' ? (cand.status.split(' ')[0] || 'Available') : 'Available'}
                 </Badge>
               </div>
 
@@ -195,15 +232,15 @@ const CompanyPage = () => {
               <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
                 <div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Readiness</div>
-                  <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{cand.readiness}%</div>
+                  <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{cand.readiness || 0}%</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Coding</div>
-                  <div className="text-sm font-bold text-blue-600 dark:text-blue-400">{cand.codingScore}</div>
+                  <div className="text-sm font-bold text-blue-600 dark:text-blue-400">{cand.codingScore || cand.coding_solved || 0}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Projects</div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{cand.projectsCount}</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{cand.projectsCount || cand.projects_count || 0}</div>
                 </div>
               </div>
 
@@ -213,19 +250,24 @@ const CompanyPage = () => {
                   Verified Skill Matrix
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {cand.skills.map((s, idx) => (
+                  {(Array.isArray(cand.skills)
+                    ? cand.skills
+                    : typeof cand.skills === 'string'
+                      ? cand.skills.split(',').map(s => ({ name: s.trim(), score: 80 }))
+                      : []
+                  ).map((s, idx) => (
                     <span
                       key={idx}
                       className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium rounded-md border border-slate-200 dark:border-slate-700"
                     >
-                      {s.name}: {s.score}
+                      {s.name || s}: {s.score || 'Verified'}
                     </span>
                   ))}
                 </div>
               </div>
 
               {/* Badges */}
-              {cand.verifiedBadges && (
+              {(Array.isArray(cand.verifiedBadges) ? cand.verifiedBadges : []).length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {cand.verifiedBadges.map((badge, idx) => (
                     <span key={idx} className="inline-flex items-center gap-1 text-[11px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 px-2 py-0.5 rounded-md font-medium">

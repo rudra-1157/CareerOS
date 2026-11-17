@@ -18,10 +18,12 @@ from app.routers import (
     challenges_router,
     notifications_router,
     external_router,
-    demo_router
+    demo_router,
+    jobs_router,
 )
 from app.database import engine, Base, SessionLocal
 from app.routers.auth import seed_demo_users_if_needed
+from app.data.company_seed import seed_companies_and_jobs
 
 # Create tables on startup and seed demo users
 Base.metadata.create_all(bind=engine)
@@ -30,6 +32,12 @@ try:
         seed_demo_users_if_needed(_db_init)
 except Exception:
     pass
+
+try:
+    with SessionLocal() as _db_seed:
+        seed_companies_and_jobs(_db_seed)
+except Exception as e:
+    print(f"[seed] Warning: company seed failed — {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -65,6 +73,7 @@ app.include_router(challenges_router,    prefix=settings.API_V1_STR)
 app.include_router(notifications_router, prefix=settings.API_V1_STR)
 app.include_router(external_router,      prefix=settings.API_V1_STR)
 app.include_router(demo_router,          prefix=settings.API_V1_STR)
+app.include_router(jobs_router,          prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

@@ -187,7 +187,7 @@ const SettingsPage = () => {
                         color: t.id === 'midnight-dark' ? '#5B8DEF' : '#0F172A'
                       }}
                     >
-                      {t.paletteName.split(':')[0]}
+                      {typeof t?.paletteName === 'string' ? t.paletteName.split(':')[0] : (t?.name || 'Theme')}
                     </span>
 
                     {isSelected ? (

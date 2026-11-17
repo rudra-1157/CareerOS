@@ -328,8 +328,10 @@ export const initialCompanyData = {
     {
       id: 1,
       name: "Aarav Sharma",
+      initials: "AS",
       targetRole: "AI/ML Engineer",
       degree: "B.Tech CSE (AI Specialization)",
+      status: "Available for Internship",
       readiness: 92,
       codingScore: "88%",
       projectsCount: 4,
@@ -345,8 +347,10 @@ export const initialCompanyData = {
     {
       id: 2,
       name: "Ananya Patel",
+      initials: "AP",
       targetRole: "Full Stack Engineer",
       degree: "B.Tech Information Technology",
+      status: "Available for Internship",
       readiness: 88,
       codingScore: "84%",
       projectsCount: 5,
@@ -362,8 +366,10 @@ export const initialCompanyData = {
     {
       id: 3,
       name: "Rohan Verma",
+      initials: "RV",
       targetRole: "Cloud & DevOps Engineer",
       degree: "B.Tech CSE",
+      status: "Shortlisted for Interview",
       readiness: 81,
       codingScore: "78%",
       projectsCount: 3,

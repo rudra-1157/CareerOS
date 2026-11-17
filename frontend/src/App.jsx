@@ -18,6 +18,7 @@ import RoadmapPage from './pages/RoadmapPage';
 import PassportPage from './pages/PassportPage';
 import ProjectsPage from './pages/ProjectsPage';
 import CompanyPage from './pages/CompanyPage';
+import JobPortalPage from './pages/JobPortalPage';
 import SettingsPage from './pages/SettingsPage';
 import FacultyDashboardPage from './pages/FacultyDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -171,6 +172,15 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['student', 'faculty', 'admin']}>
                         <CompanyPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/jobs"
+                    element={
+                      <ProtectedRoute allowedRoles={['student']}>
+                        <JobPortalPage />
                       </ProtectedRoute>
                     }
                   />

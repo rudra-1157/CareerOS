@@ -22,7 +22,7 @@ import Badge from '../components/common/Badge';
 
 // ─── Simple Markdown Renderer ─────────────────────────────────────────────────
 function renderMarkdown(text) {
-  if (!text) return null;
+  if (!text || typeof text !== 'string') return null;
   const lines = text.split('\n');
   const elements = [];
   let i = 0;
@@ -107,6 +107,7 @@ function renderMarkdown(text) {
 }
 
 function inlineFormat(text) {
+  if (!text || typeof text !== 'string') return text || '';
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('**') && part.endsWith('**'))
