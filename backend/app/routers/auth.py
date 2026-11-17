@@ -144,7 +144,7 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     db.commit()
     
     access_token = create_access_token(
-        data={"sub": str(user.id), "role": user.role}
+        data={"sub": str(user.id), "email": user.email, "role": user.role}
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

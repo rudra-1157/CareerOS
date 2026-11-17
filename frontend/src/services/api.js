@@ -11,9 +11,32 @@ const apiClient = axios.create({
 // ─── JWT Interceptor ─────────────────────────────────────────────────────────
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('careeros_token') || sessionStorage.getItem('careeros_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
+    config.headers.Authorization = `Bearer ${token.trim()}`;
+  }
   return config;
 }, (error) => Promise.reject(error));
+
+// ─── Response Interceptor: Auto-recover from stale/invalid credentials ───────
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const detail = error.response.data?.detail;
+      if (
+        detail === 'Could not validate credentials' ||
+        detail === 'Not authenticated' ||
+        detail === 'Invalid token payload'
+      ) {
+        localStorage.removeItem('careeros_token');
+        localStorage.removeItem('careeros_user');
+        sessionStorage.removeItem('careeros_token');
+        sessionStorage.removeItem('careeros_user');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 export const authService = {

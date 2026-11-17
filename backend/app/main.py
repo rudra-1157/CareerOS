@@ -20,10 +20,16 @@ from app.routers import (
     external_router,
     demo_router
 )
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
+from app.routers.auth import seed_demo_users_if_needed
 
-# Create tables on startup
+# Create tables on startup and seed demo users
 Base.metadata.create_all(bind=engine)
+try:
+    with SessionLocal() as _db_init:
+        seed_demo_users_if_needed(_db_init)
+except Exception:
+    pass
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

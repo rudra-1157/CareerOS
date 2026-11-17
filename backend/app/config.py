@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./careeros.db"
     
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     
     # Legacy setting (deprecated)
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

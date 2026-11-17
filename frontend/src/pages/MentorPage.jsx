@@ -244,10 +244,14 @@ const MentorPage = () => {
       };
       setMessages(prev => [...prev, aiMsg]);
     } catch (err) {
+      const status = err.response?.status;
       const detail = err.response?.data?.detail || "Sorry, I encountered an error. Please try again.";
-      const errContent = (detail === 'AI service is not configured.' || detail?.includes('AI service is not configured'))
-        ? "**AI service is not configured.**\n\nPlease verify that `GROQ_API_KEY` is set in `backend/.env` to enable live LLM responses."
-        : detail;
+      let errContent = detail;
+      if (status === 401 || detail === 'Could not validate credentials' || detail === 'Not authenticated') {
+        errContent = "**Authentication Required**\n\nYour login session has expired or is invalid. Please sign in again with your account or a demo account to chat with AI Mentor.";
+      } else if (detail === 'AI service is not configured.' || detail?.includes('AI service is not configured')) {
+        errContent = "**AI service is not configured.**\n\nPlease verify that `GROQ_API_KEY` is set in `backend/.env` to enable live LLM responses.";
+      }
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`,
         role: 'assistant',
@@ -298,7 +302,7 @@ const MentorPage = () => {
             AI Learning Mentor
           </h2>
           <p className="text-xs text-slate-300 mt-1 max-w-xl font-normal leading-relaxed">
-            Institutional syllabus-indexed guidance powered by Groq (LLaMA 3.3). Ask questions about core computer science subjects, algorithms, vivas, or placement readiness.
+            Institutional syllabus-indexed guidance powered by Groq ({aiStatus?.model || 'openai/gpt-oss-120b'}). Ask questions about core computer science subjects, algorithms, vivas, or placement readiness.
           </p>
         </div>
 

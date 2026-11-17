@@ -6,29 +6,52 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 
 
 class GroqAIService:
     def __init__(self):
         self.client = None
         self.async_client = None
+        self._current_api_key = None
         self._init_clients()
 
     def _get_api_key(self) -> Optional[str]:
-        api_key = os.getenv("GROQ_API_KEY") or getattr(settings, "GROQ_API_KEY", "")
+        if "GROQ_API_KEY" in os.environ:
+            api_key = os.environ.get("GROQ_API_KEY", "")
+        else:
+            api_key = getattr(settings, "GROQ_API_KEY", "")
+            if not api_key:
+                try:
+                    from dotenv import dotenv_values
+                    env_vals = dotenv_values()
+                    api_key = env_vals.get("GROQ_API_KEY", "")
+                except Exception:
+                    pass
         if api_key:
             api_key = api_key.strip()
         return api_key
 
     def get_model_name(self) -> str:
-        model = os.getenv("GROQ_MODEL") or getattr(settings, "GROQ_MODEL", DEFAULT_GROQ_MODEL)
-        return model.strip() if model else DEFAULT_GROQ_MODEL
+        model = os.getenv("GROQ_MODEL")
+        if not model:
+            try:
+                from dotenv import dotenv_values
+                env_vals = dotenv_values()
+                model = env_vals.get("GROQ_MODEL")
+            except Exception:
+                pass
+        if not model:
+            model = getattr(settings, "GROQ_MODEL", DEFAULT_GROQ_MODEL)
+        return str(model).strip() if model else DEFAULT_GROQ_MODEL
 
     def _init_clients(self):
         api_key = self._get_api_key()
         placeholder_keys = ["", "your_groq_api_key", "your-groq-api-key-here", "your_groq_api_key_here"]
         
+        if self.client is not None and api_key == self._current_api_key:
+            return
+
         if api_key and api_key not in placeholder_keys and len(api_key) > 5:
             try:
                 from groq import Groq, AsyncGroq
@@ -42,13 +65,16 @@ class GroqAIService:
                     timeout=30.0,
                     max_retries=2
                 )
+                self._current_api_key = api_key
             except Exception as e:
                 logger.warning(f"Failed to initialize Groq client: {e}")
                 self.client = None
                 self.async_client = None
+                self._current_api_key = None
         else:
             self.client = None
             self.async_client = None
+            self._current_api_key = None
 
     def is_configured(self) -> bool:
         self._init_clients()

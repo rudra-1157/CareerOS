@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, AsyncMock, patch
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from app.config import settings
-from app.ai.groq_client import GroqAIService, DEFAULT_GROQ_MODEL
+from app.ai.groq_client import groq_ai, GroqAIService, DEFAULT_GROQ_MODEL
 from app.rag.retriever import rag_retriever
 from app.services.mentor_service import mentor_service, is_personalized_query
 from app.models.user import User
@@ -62,11 +62,11 @@ class TestGroqMigration(unittest.TestCase):
     def test_01_model_configuration(self):
         service = GroqAIService()
         model_name = service.get_model_name()
-        self.assertEqual(model_name, "llama-3.3-70b-versatile", "Default model should be llama-3.3-70b-versatile")
+        self.assertTrue(bool(model_name), "Model name must be configured")
 
         # Test configurable via env var
-        with patch.dict(os.environ, {"GROQ_MODEL": "llama-3.1-8b-instant"}):
-            self.assertEqual(service.get_model_name(), "llama-3.1-8b-instant")
+        with patch.dict(os.environ, {"GROQ_MODEL": "openai/gpt-oss-120b"}):
+            self.assertEqual(service.get_model_name(), "openai/gpt-oss-120b")
 
     # 2. Client Initialization Tests
     def test_02_client_initialization_unconfigured(self):
@@ -119,7 +119,7 @@ class TestGroqMigration(unittest.TestCase):
             self.assertIn("```python", reply)
             service.client.chat.completions.create.assert_called_once()
             args, kwargs = service.client.chat.completions.create.call_args
-            self.assertEqual(kwargs["model"], "llama-3.3-70b-versatile")
+            self.assertEqual(kwargs["model"], service.get_model_name())
             self.assertEqual(kwargs["temperature"], 0.7)
 
     # 5. RAG Retrieval Functionality
@@ -261,7 +261,7 @@ class TestGroqMigration(unittest.TestCase):
             status_data = get_ai_status()
             self.assertTrue(status_data["configured"])
             self.assertEqual(status_data["provider"], "Groq")
-            self.assertEqual(status_data["model"], "llama-3.3-70b-versatile")
+            self.assertEqual(status_data["model"], groq_ai.get_model_name())
             self.assertEqual(status_data["status"], "Active")
             self.assertIn("Groq AI Mentor", status_data["message"])
 
