@@ -52,6 +52,77 @@ class EvaluateAnswerResponse(BaseModel):
 MIN_WORDS = 15          # Reject answers shorter than this
 MIN_CHARS = 60
 
+# Comprehensive vocabulary for detecting coherent English & technical responses
+COMMON_ENGLISH_AND_TECH_VOCAB = {
+    # Common English words
+    'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on', 'with', 'he',
+    'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or',
+    'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about',
+    'who', 'get', 'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know',
+    'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than',
+    'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use', 'two',
+    'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give',
+    'day', 'most', 'us', 'is', 'are', 'was', 'were', 'been', 'has', 'had', 'does', 'did', 'done',
+    'where', 'while', 'both', 'between', 'same', 'different', 'another', 'such', 'through', 'during',
+    # Technical & Computer Science vocabulary
+    'algorithm', 'code', 'data', 'function', 'class', 'method', 'variable', 'loop', 'array', 'list', 'hash',
+    'table', 'tree', 'graph', 'node', 'pointer', 'memory', 'space', 'time', 'complexity', 'constant', 'linear',
+    'fast', 'slow', 'cycle', 'detect', 'floyd', 'tortoise', 'hare', 'set', 'map', 'approach', 'solution',
+    'case', 'base', 'step', 'steps', 'null', 'none', 'value', 'return', 'returns', 'store', 'stores',
+    'system', 'design', 'cache', 'database', 'api', 'model', 'feature', 'input', 'output', 'user', 'team',
+    'stack', 'queue', 'heap', 'binary', 'search', 'sort', 'dynamic', 'programming', 'recursion', 'iterative',
+    'bfs', 'dfs', 'traversal', 'vertex', 'edge', 'weight', 'matrix', 'string', 'integer', 'boolean', 'big',
+    'worst', 'best', 'average', 'amortized', 'collision', 'chaining', 'probing', 'bucket', 'load', 'factor',
+    'precision', 'recall', 'accuracy', 'loss', 'gradient', 'overfitting', 'underfitting', 'neural', 'network',
+    'transformer', 'attention', 'embedding', 'rag', 'llm', 'retrieval', 'vector', 'similarity', 'star',
+    'situation', 'task', 'action', 'result', 'leadership', 'conflict', 'deadline', 'priority', 'project'
+}
+
+
+def detect_gibberish(text: str) -> bool:
+    """
+    Returns True if the text is random characters, keyboard spam, or unintelligible gibberish.
+    """
+    words = text.strip().split()
+    if not words or len(words) < 3:
+        return True
+
+    # 1. Check for spam of single-letter words (e.g. 'f h g y4t g g g g f g')
+    single_char_words = [w for w in words if len(w) == 1 and w.lower() not in ('a', 'i')]
+    if len(single_char_words) / len(words) > 0.25:
+        return True
+
+    # 2. Check for repeating identical consecutive words (e.g. 'g g g g')
+    rep_count = 0
+    for i in range(1, len(words)):
+        if words[i].lower() == words[i - 1].lower():
+            rep_count += 1
+            if rep_count >= 2:
+                return True
+        else:
+            rep_count = 0
+
+    # 3. Clean tokens and check recognizable vocabulary ratio
+    clean_words = [re.sub(r'[^a-zA-Z]', '', w).lower() for w in words]
+    clean_words = [w for w in clean_words if w]
+    if not clean_words:
+        return True
+
+    # Check vowel presence in words of 3+ letters (gibberish like 'hfuihHFE', 'hFHEHEFHE', 'bcdfgh')
+    vowels = set('aeiou')
+    low_vowel_words = [w for w in clean_words if len(w) >= 3 and not (set(w) & vowels)]
+    if len(low_vowel_words) / len(clean_words) > 0.30:
+        return True
+
+    recognized = sum(1 for w in clean_words if w in COMMON_ENGLISH_AND_TECH_VOCAB)
+    ratio = recognized / len(clean_words)
+
+    # If less than 20% of words are recognized English or technical words, it's gibberish
+    if ratio < 0.20:
+        return True
+
+    return False
+
 
 def _grade(score: float) -> str:
     if score >= 8.5:
@@ -60,7 +131,9 @@ def _grade(score: float) -> str:
         return "Good"
     if score >= 5.0:
         return "Fair"
-    return "Weak"
+    if score > 0.0:
+        return "Weak"
+    return "Zero"
 
 
 def _keyword_overlap(text: str, point: str) -> float:
@@ -117,16 +190,22 @@ def _rule_engine_evaluate(
     complexity_stated = any(tok in answer_lower for tok in ["o(1)", "o(n)", "o(log n)", "o(n^2)", "o(n log n)", "constant time", "linear time", "logarithmic"])
 
     # 5. Composite scores
-    technical_score = round((coverage_ratio * 10 * 0.5) + (signal_score * 0.3) + (length_score * 0.2), 1)
-    technical_score = max(1.0, min(10.0, technical_score))
+    if coverage_ratio == 0 and hits == 0:
+        technical_score = 0.0
+        clarity_score = 0.0
+        completeness_score = 0.0
+        overall = 0.0
+    else:
+        technical_score = round((coverage_ratio * 10 * 0.5) + (signal_score * 0.3) + (length_score * 0.2), 1)
+        technical_score = max(0.0, min(10.0, technical_score))
 
-    clarity_score = round(min(10.0, 4.0 + (word_count / 25) + hits * 0.4), 1)
-    clarity_score = max(1.0, min(10.0, clarity_score))
+        clarity_score = round(min(10.0, (word_count / 25) + hits * 0.4), 1)
+        clarity_score = max(0.0, min(10.0, clarity_score))
 
-    completeness_score = round(coverage_ratio * 10, 1)
-    completeness_score = max(1.0, min(10.0, completeness_score))
+        completeness_score = round(coverage_ratio * 10, 1)
+        completeness_score = max(0.0, min(10.0, completeness_score))
 
-    overall = round((technical_score * 0.4) + (clarity_score * 0.3) + (completeness_score * 0.3), 1)
+        overall = round((technical_score * 0.4) + (clarity_score * 0.3) + (completeness_score * 0.3), 1)
 
     # 6. Strengths / improvements
     strengths = []
@@ -197,25 +276,25 @@ IDEAL KEY POINTS (what an excellent answer should cover):
 STUDENT'S ANSWER:
 {answer}
 
-Return a JSON object with EXACTLY this structure (all numeric scores are floats 1.0–10.0):
+Return a JSON object with EXACTLY this structure (all numeric scores are floats 0.0–10.0):
 {{
-  "overall_score": <float>,
+  "overall_score": <float between 0.0 and 10.0>,
   "technical_depth": {{
     "label": "Technical Depth",
-    "score": <float>,
-    "grade": "<Excellent|Good|Fair|Weak>",
+    "score": <float between 0.0 and 10.0>,
+    "grade": "<Excellent|Good|Fair|Weak|Zero>",
     "comment": "<one-line specific comment>"
   }},
   "clarity": {{
     "label": "Clarity & Structure",
-    "score": <float>,
-    "grade": "<Excellent|Good|Fair|Weak>",
+    "score": <float between 0.0 and 10.0>,
+    "grade": "<Excellent|Good|Fair|Weak|Zero>",
     "comment": "<one-line specific comment>"
   }},
   "completeness": {{
     "label": "Completeness",
-    "score": <float>,
-    "grade": "<Excellent|Good|Fair|Weak>",
+    "score": <float between 0.0 and 10.0>,
+    "grade": "<Excellent|Good|Fair|Weak|Zero>",
     "comment": "<one-line specific comment>"
   }},
   "matched_key_points": ["<verbatim or paraphrased key points the student addressed>"],
@@ -225,11 +304,13 @@ Return a JSON object with EXACTLY this structure (all numeric scores are floats 
   "summary": "<2-3 sentence holistic evaluation>"
 }}
 
-RULES:
-- If the answer is gibberish, random characters, or completely off-topic, give overall_score <= 1.5 and explain why.
-- If the answer partially covers the topic but misses most key points, score 3–5.
-- Only give 8+ for answers that explicitly cover most key points with technical accuracy.
-- Do NOT be generous — a one-sentence or vague answer should score 2–4 max.
+CRITICAL SCORING RULES:
+- If the answer is gibberish, random characters, keyboard spam, completely off-topic, or fails to address the question in any way, you MUST award overall_score = 0.0 and all subscores = 0.0 with grade "Zero". Do NOT award 1.0 or any sympathy mark.
+- If the answer is completely incorrect or has zero relevant technical facts, give 0.0.
+- If the answer only vaguely touches 1 concept without explanation, score 1.0–2.5.
+- If the answer partially covers the topic but misses most key points, score 3.0–5.5.
+- Only give 8.0+ for answers that explicitly cover most key points with technical accuracy.
+- Do NOT be generous — a one-sentence or vague answer should score low.
 """
 
 
@@ -285,6 +366,39 @@ async def evaluate_interview_answer(
                 f"Please write at least {MIN_WORDS} words to receive a meaningful evaluation."
             ),
         )
+
+    # Immediate rejection / zero-score for gibberish or keyboard spam
+    if detect_gibberish(answer):
+        return {
+            "overall_score": 0.0,
+            "technical_depth": {
+                "label": "Technical Depth",
+                "score": 0.0,
+                "grade": "Zero",
+                "comment": "No technical explanation present. The response appears to be random or unintelligible characters."
+            },
+            "clarity": {
+                "label": "Clarity & Structure",
+                "score": 0.0,
+                "grade": "Zero",
+                "comment": "The text lacks coherent English words or grammatical sentence structure."
+            },
+            "completeness": {
+                "label": "Completeness",
+                "score": 0.0,
+                "grade": "Zero",
+                "comment": "Failed to address any of the required key points (0/7 points covered)."
+            },
+            "matched_key_points": [],
+            "missing_key_points": req.ideal_key_points,
+            "strengths": [],
+            "improvements": [
+                "Enter a coherent, structured explanation instead of random keyboard characters.",
+                "Directly address the question concepts (e.g. data structures, algorithms, time/space complexity) to earn marks."
+            ],
+            "summary": "Your answer scored 0 / 10 (Zero Marks). The response consists of unintelligible gibberish or random characters and cannot be awarded any credit.",
+            "provider": "ValidationEngine"
+        }
 
     # Try Groq first; fall back to rule engine
     result = await _groq_evaluate(

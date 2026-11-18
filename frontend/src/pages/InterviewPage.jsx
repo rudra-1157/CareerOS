@@ -275,12 +275,38 @@ function GradeBadge({ grade }) {
     Good:      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
     Fair:      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
     Weak:      'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800',
+    Zero:      'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/80 dark:text-red-300 dark:border-red-900',
   };
   return (
-    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${styles[grade] || styles.Fair}`}>
+    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${styles[grade] || styles.Weak}`}>
       {grade}
     </span>
   );
+}
+
+function checkIsGibberish(text) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 3) return false;
+  // single character words spam like 'ff h g y4t g g g g f g'
+  const singleCharWords = words.filter(w => w.length === 1 && !['a', 'i', 'A', 'I'].includes(w));
+  if (singleCharWords.length / words.length > 0.25) return true;
+  // repeating identical consecutive words (e.g. 'g g g g')
+  let rep = 0;
+  for (let i = 1; i < words.length; i++) {
+    if (words[i].toLowerCase() === words[i - 1].toLowerCase()) {
+      rep++;
+      if (rep >= 2) return true;
+    } else {
+      rep = 0;
+    }
+  }
+  // low vowel words for letter jumbles like 'hfuihHFE', 'hFHEHEFHE'
+  const clean = words.map(w => w.replace(/[^a-zA-Z]/g, '').toLowerCase()).filter(Boolean);
+  if (clean.length === 0) return true;
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u']);
+  const lowVowels = clean.filter(w => w.length >= 3 && ![...w].some(c => vowels.has(c)));
+  if (lowVowels.length / clean.length > 0.30) return true;
+  return false;
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -298,7 +324,8 @@ const InterviewPage = () => {
   const currentQuestions = mockQuestionsDatabase[selectedTrack.id] || mockQuestionsDatabase.dsa;
   const currentQ = currentQuestions[questionIndex % currentQuestions.length];
   const wordCount = userAnswer.trim() ? userAnswer.trim().split(/\s+/).filter(Boolean).length : 0;
-  const isAnswerValid = wordCount >= MIN_WORDS;
+  const isGibberish = checkIsGibberish(userAnswer);
+  const isAnswerValid = wordCount >= MIN_WORDS && !isGibberish;
 
   const avgScore = sessionScores.length > 0
     ? (sessionScores.reduce((s, v) => s + v, 0) / sessionScores.length).toFixed(1)
@@ -552,10 +579,18 @@ const InterviewPage = () => {
                 </div>
 
                 {/* Minimum-word warning */}
-                {wordCount > 0 && wordCount < MIN_WORDS && !evaluationError && (
+                {wordCount > 0 && wordCount < MIN_WORDS && !isGibberish && !evaluationError && (
                   <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>Write at least <strong>{MIN_WORDS} words</strong> before submitting — {MIN_WORDS - wordCount} more needed.</span>
+                  </div>
+                )}
+
+                {/* Gibberish / Random characters warning */}
+                {isGibberish && wordCount >= 3 && !evaluationError && (
+                  <div className="flex items-center gap-2 text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg px-3 py-2">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Response contains random characters or repetitive words. Enter a meaningful explanation to be evaluated.</span>
                   </div>
                 )}
 
@@ -614,13 +649,20 @@ const InterviewPage = () => {
                         via {evaluation.provider}
                       </span>
                     </div>
-                    <div className={`text-lg font-black ${
-                      evaluation.overall_score >= 8 ? 'text-emerald-600 dark:text-emerald-400'
-                      : evaluation.overall_score >= 6 ? 'text-blue-600 dark:text-blue-400'
-                      : evaluation.overall_score >= 4 ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-rose-600 dark:text-rose-400'
-                    }`}>
-                      {evaluation.overall_score} / 10
+                    <div className="flex items-center gap-3">
+                      {evaluation.overall_score === 0 && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                          Zero Marks
+                        </span>
+                      )}
+                      <div className={`text-lg font-black ${
+                        evaluation.overall_score >= 8 ? 'text-emerald-600 dark:text-emerald-400'
+                        : evaluation.overall_score >= 6 ? 'text-blue-600 dark:text-blue-400'
+                        : evaluation.overall_score >= 4 ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {evaluation.overall_score} / 10
+                      </div>
                     </div>
                   </div>
 
