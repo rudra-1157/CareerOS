@@ -20,6 +20,7 @@ from app.routers import (
     external_router,
     demo_router,
     jobs_router,
+    interview_router,
 )
 from app.database import engine, Base, SessionLocal
 from app.routers.auth import seed_demo_users_if_needed
@@ -74,6 +75,7 @@ app.include_router(notifications_router, prefix=settings.API_V1_STR)
 app.include_router(external_router,      prefix=settings.API_V1_STR)
 app.include_router(demo_router,          prefix=settings.API_V1_STR)
 app.include_router(jobs_router,          prefix=settings.API_V1_STR)
+app.include_router(interview_router,     prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

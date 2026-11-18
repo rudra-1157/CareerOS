@@ -515,3 +515,21 @@ export const jobsService = {
 
 export default apiClient;
 
+// ─── Interview Evaluation ────────────────────────────────────────────────────
+export const interviewService = {
+  /**
+   * Evaluate a mock interview answer via Groq AI (or rule-engine fallback).
+   * Throws HTTP 422 if the answer is too short.
+   */
+  evaluate: async ({ question, answer, idealKeyPoints, track, difficulty }) => {
+    const response = await apiClient.post('/interview/evaluate', {
+      question,
+      answer,
+      ideal_key_points: idealKeyPoints,
+      track,
+      difficulty,
+    });
+    return response.data;
+  },
+};
+
