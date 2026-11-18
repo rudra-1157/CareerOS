@@ -29,6 +29,10 @@ const PRACTICE_PROBLEMS = [
     description: 'Construct a function that receives a sequence of integers and returns an array where each position contains the running cumulative sum of elements up to that index.',
     sampleInput: 'nums = [1, 2, 3, 4]',
     expectedOutput: '[1, 3, 6, 10]',
+    harnessCall: {
+      python: 'running_sum([1, 2, 3, 4])',
+      javascript: 'runningSum([1, 2, 3, 4])'
+    },
     starterCode: {
       python: "def running_sum(nums):\n    # Return the cumulative sum array\n    result = []\n    current = 0\n    for n in nums:\n        current += n\n        result.append(current)\n    return result\n",
       javascript: "function runningSum(nums) {\n    let current = 0;\n    return nums.map(n => current += n);\n}\n",
@@ -44,6 +48,10 @@ const PRACTICE_PROBLEMS = [
     description: 'Given a string containing bracket symbols, determine if the input sequence is syntactically balanced according to proper opening and closing order.',
     sampleInput: "tokens = '({[]})'",
     expectedOutput: 'True',
+    harnessCall: {
+      python: "is_balanced('({[]})')",
+      javascript: "isBalanced('({[]})')"
+    },
     starterCode: {
       python: "def is_balanced(tokens):\n    stack = []\n    mapping = {')': '(', '}': '{', ']': '['}\n    for char in tokens:\n        if char in mapping.values():\n            stack.append(char)\n        elif char in mapping:\n            if not stack or stack.pop() != mapping[char]:\n                return False\n    return len(stack) == 0\n",
       javascript: "function isBalanced(tokens) {\n    const stack = [];\n    // Implement balance check\n    return true;\n}\n",
@@ -59,6 +67,10 @@ const PRACTICE_PROBLEMS = [
     description: 'Given an m x n numerical grid populated with traversal costs, compute a path from top-left to bottom-right that minimizes the total accumulated traversal cost.',
     sampleInput: 'grid = [[1, 3, 1], [1, 5, 1], [4, 2, 1]]',
     expectedOutput: '7',
+    harnessCall: {
+      python: 'min_cost_path([[1, 3, 1], [1, 5, 1], [4, 2, 1]])',
+      javascript: 'minCostPath([[1, 3, 1], [1, 5, 1], [4, 2, 1]])'
+    },
     starterCode: {
       python: "def min_cost_path(grid):\n    m, n = len(grid), len(grid[0])\n    dp = [[0] * n for _ in range(m)]\n    dp[0][0] = grid[0][0]\n    # Fill DP table\n    return dp[-1][-1]\n",
       javascript: "function minCostPath(grid) {\n    // Implement DP path cost\n    return 0;\n}\n",
@@ -74,6 +86,10 @@ const PRACTICE_PROBLEMS = [
     description: 'Calculate the total sum of all root-to-leaf paths in a binary tree where path nodes represent numeric values.',
     sampleInput: 'tree_nodes = [4, 9, 0, 5, 1]',
     expectedOutput: '1026',
+    harnessCall: {
+      python: 'sum_branch_paths([4, 9, 0, 5, 1])',
+      javascript: 'sumBranchPaths([4, 9, 0, 5, 1])'
+    },
     starterCode: {
       python: "def sum_branch_paths(root):\n    # Traverse paths and calculate sum\n    return 0\n",
       javascript: "function sumBranchPaths(root) {\n    return 0;\n}\n",
@@ -89,6 +105,10 @@ const PRACTICE_PROBLEMS = [
     description: 'Analyze an adjacency representation of a directed network to determine whether a cyclic dependency exists within the component nodes.',
     sampleInput: 'num_nodes = 4, edges = [[0, 1], [1, 2], [2, 0]]',
     expectedOutput: 'True (Cycle Detected)',
+    harnessCall: {
+      python: 'has_cycle(4, [[0, 1], [1, 2], [2, 0]])',
+      javascript: 'hasCycle(4, [[0, 1], [1, 2], [2, 0]])'
+    },
     starterCode: {
       python: "def has_cycle(num_nodes, edges):\n    # Detect cycle via topological sort or DFS graph coloring\n    return True\n",
       javascript: "function hasCycle(numNodes, edges) {\n    return true;\n}\n",
@@ -134,52 +154,127 @@ const PracticeTab = () => {
     return matchDiff && matchCat && matchSearch;
   });
 
-  const handleRunTest = () => {
+  const handleRunTest = async () => {
     setIsRunning(true);
-    setTimeout(() => {
-      setIsRunning(false);
+    setActiveConsoleTab('testcases');
+    try {
+      const harness = selectedProblem.harnessCall?.[language] || selectedProblem.harnessCall?.python || '';
+      const res = await codingService.runCode({
+        challenge_id: selectedProblem.id,
+        language,
+        code,
+        custom_input: selectedProblem.sampleInput,
+        expected_output: selectedProblem.expectedOutput,
+        harness_call: harness
+      });
+
+      const isPassed = res.passed === 1 || res.passed === true || res.status === 'Accepted';
+      const actualVal = res.actual || res.output || '(No output)';
+
       setTestResults({
-        passed: true,
-        runtime: '28ms',
-        memory: '15.8MB',
+        passed: isPassed,
+        status: res.status,
+        runtime: res.runtime || '28ms',
+        memory: res.memory || '14.8MB',
         input: selectedProblem.sampleInput,
         expected: selectedProblem.expectedOutput,
-        actual: selectedProblem.expectedOutput
+        actual: actualVal
+      });
+
+      if (isPassed) {
+        addToast({
+          type: 'success',
+          title: 'Tests Passed',
+          message: 'Sample test case matched expected output.'
+        });
+      } else {
+        addToast({
+          type: 'error',
+          title: res.status === 'Wrong Answer' ? 'Test Failed: Wrong Answer' : `Execution Failed (${res.status})`,
+          message: `Expected: ${selectedProblem.expectedOutput}, Actual: ${actualVal}`
+        });
+      }
+    } catch (err) {
+      const errMsg = err?.response?.data?.detail || err?.message || 'Error executing code';
+      setTestResults({
+        passed: false,
+        status: 'Runtime Error',
+        runtime: '0ms',
+        memory: '0MB',
+        input: selectedProblem.sampleInput,
+        expected: selectedProblem.expectedOutput,
+        actual: errMsg
       });
       addToast({
-        type: 'success',
-        title: 'Tests Passed',
-        message: 'Sample test case matched expected output.'
+        type: 'error',
+        title: 'Execution Error',
+        message: errMsg
       });
-    }, 500);
+    } finally {
+      setIsRunning(false);
+    }
   };
 
-  const handleSubmitSolution = () => {
+  const handleSubmitSolution = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const harness = selectedProblem.harnessCall?.[language] || selectedProblem.harnessCall?.python || '';
+      const res = await codingService.submitCode({
+        challenge_id: selectedProblem.id,
+        language,
+        code,
+        challenge_title: selectedProblem.title,
+        expected_output: selectedProblem.expectedOutput,
+        harness_call: harness,
+        xp: selectedProblem.xp
+      });
+
+      const data = res.data || res;
+      const isPassed = Boolean(data.passed || data.status === 'Accepted');
+      const statusText = data.status || (isPassed ? 'Accepted' : 'Wrong Answer');
+      const actualVal = data.actual || data.output || '(No output)';
+
       const newSub = {
         id: `SUB-${Date.now().toString().slice(-4)}`,
         problem: selectedProblem.title,
-        status: 'Accepted',
-        runtime: '32ms',
-        memory: '16.1MB',
+        status: statusText,
+        passed: isPassed,
+        runtime: data.runtime || '32ms',
+        memory: data.memory || '15.2MB',
         timestamp: 'Just now'
       };
       setSubmissionHistory(prev => [newSub, ...prev]);
       setActiveConsoleTab('submissions');
 
-      // Update XP
-      if (currentUser?.learning_xp !== undefined) {
-        updateCurrentUser({ learning_xp: (currentUser.learning_xp || 0) + selectedProblem.xp });
-      }
+      if (isPassed) {
+        if (data.total_xp !== undefined) {
+          updateCurrentUser({ learning_xp: data.total_xp });
+        } else if (currentUser?.learning_xp !== undefined) {
+          updateCurrentUser({ learning_xp: (currentUser.learning_xp || 0) + selectedProblem.xp });
+        }
 
+        addToast({
+          type: 'success',
+          title: 'Solution Accepted!',
+          message: `Awarded +${selectedProblem.xp} XP for solving ${selectedProblem.title}!`
+        });
+      } else {
+        addToast({
+          type: 'error',
+          title: `Submission Failed: ${statusText}`,
+          message: `Expected: "${selectedProblem.expectedOutput}", Actual: "${actualVal}". No XP awarded.`
+        });
+      }
+    } catch (err) {
+      const errMsg = err?.response?.data?.detail || err?.message || 'Error submitting solution';
       addToast({
-        type: 'success',
-        title: 'Solution Accepted!',
-        message: `Awarded +${selectedProblem.xp} XP for solving ${selectedProblem.title}!`
+        type: 'error',
+        title: 'Submission Error',
+        message: errMsg
       });
-    }, 700);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -447,17 +542,35 @@ const PracticeTab = () => {
               <div className="p-4 font-mono text-xs space-y-2">
                 {testResults ? (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-emerald-500 font-bold">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Test Executed Successfully ({testResults.runtime})</span>
+                    <div className={`flex items-center gap-2 font-bold ${
+                      testResults.passed ? 'text-emerald-500' : 'text-rose-500'
+                    }`}>
+                      {testResults.passed ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                      ) : (
+                        <XCircle className="w-4 h-4" />
+                      )}
+                      <span>
+                        {testResults.passed 
+                          ? `Test Executed Successfully (${testResults.runtime})`
+                          : `Test Failed: ${testResults.status || 'Wrong Answer'} (${testResults.runtime})`
+                        }
+                      </span>
                     </div>
                     <div 
-                      className="p-3 rounded-xl border text-[11px] space-y-1"
+                      className="p-3 rounded-xl border text-[11px] space-y-1.5"
                       style={{ backgroundColor: 'var(--color-secondary-bg)', borderColor: 'var(--color-card-border)' }}
                     >
-                      <div>Input: {testResults.input}</div>
-                      <div>Expected: {testResults.expected}</div>
-                      <div className="text-emerald-500 font-bold">Actual: {testResults.actual}</div>
+                      <div>Input: <span className="font-semibold">{testResults.input}</span></div>
+                      <div>Expected: <span className="font-semibold text-emerald-500">{testResults.expected}</span></div>
+                      <div>
+                        Actual:{' '}
+                        <span className={`font-bold ${
+                          testResults.passed ? 'text-emerald-500' : 'text-rose-500'
+                        }`}>
+                          {testResults.actual}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -471,24 +584,35 @@ const PracticeTab = () => {
             {/* Tab 2: Submissions History */}
             {activeConsoleTab === 'submissions' && (
               <div className="divide-y text-xs font-mono" style={{ borderColor: 'var(--color-card-border)' }}>
-                {submissionHistory.map((sub) => (
-                  <div 
-                    key={sub.id}
-                    className="p-3 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      <div>
-                        <span className="font-bold text-emerald-500 block">{sub.status}</span>
-                        <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{sub.problem}</span>
+                {submissionHistory.map((sub) => {
+                  const isAccepted = sub.status === 'Accepted' || sub.passed === true;
+                  return (
+                    <div 
+                      key={sub.id}
+                      className="p-3 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {isAccepted ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-rose-500" />
+                        )}
+                        <div>
+                          <span className={`font-bold block ${
+                            isAccepted ? 'text-emerald-500' : 'text-rose-500'
+                          }`}>
+                            {sub.status}
+                          </span>
+                          <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{sub.problem}</span>
+                        </div>
+                      </div>
+                      <div className="text-right text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                        <div>{sub.runtime} • {sub.memory}</div>
+                        <div className="text-[10px]">{sub.timestamp}</div>
                       </div>
                     </div>
-                    <div className="text-right text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-                      <div>{sub.runtime} • {sub.memory}</div>
-                      <div className="text-[10px]">{sub.timestamp}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

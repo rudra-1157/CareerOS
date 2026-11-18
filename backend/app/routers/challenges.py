@@ -12,6 +12,7 @@ from app.models.user import User, StudentProfile
 from app.models.social import CodingBattle, BattleSubmission
 from app.models.coding import Challenge, CodingProblem, CodingTestCase
 from app.models.notification import Notification
+from app.services.coding_service import execute_code_sandbox
 
 router = APIRouter(prefix="/challenges", tags=["Challenges"])
 
@@ -273,18 +274,31 @@ def submit_battle_solution(
     if battle.status not in ("in_progress", "lobby"):
         return {"status": "error", "message": "Battle has already concluded."}
 
-    # Evaluate code: verify syntax and simulate 3 test cases
+    # Evaluate code against real sandbox execution
     code = req.code.strip()
     total_tests = 3
-    tests_passed = 3
-    runtime_ms = round(random.uniform(28.0, 65.0), 1)
 
-    if len(code) < 15 or "pass" in code and len(code.split("\n")) <= 3:
-        tests_passed = 1
-    elif "return" not in code:
+    run_res = execute_code_sandbox(
+        code=code,
+        language=req.language,
+        custom_input="items = [10, 20, 5], threshold = 8",
+        harness_call="process_data([10, 20, 5], 8)",
+        expected_output="[10, 30]"
+    )
+
+    if run_res.get("passed"):
+        tests_passed = 3
+    elif run_res.get("status") == "Runtime Error" or run_res.get("exit_code", 0) != 0:
+        tests_passed = 0
+    else:
         tests_passed = 0
 
-    score = tests_passed * 33 + (10 if runtime_ms < 50 else 0)
+    try:
+        runtime_ms = float(str(run_res.get("runtime", "35 ms")).replace(" ms", "").replace(">", ""))
+    except Exception:
+        runtime_ms = 45.0
+
+    score = tests_passed * 33 + (10 if runtime_ms < 50 and tests_passed > 0 else 0)
 
     # Save submission
     existing_sub = db.query(BattleSubmission).filter(

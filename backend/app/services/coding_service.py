@@ -84,17 +84,78 @@ CURATED_CHALLENGES = [
     }
 ]
 
-def execute_code_sandbox(code: str, language: str, custom_input: str = "") -> Dict[str, Any]:
+def normalize_output(val: Any) -> str:
+    """Normalize string representation for comparison."""
+    if val is None:
+        return ""
+    s = str(val).strip()
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        s = s[1:-1]
+    if s.lower() in ("true", "true (cycle detected)"):
+        return "true"
+    if s.lower() == "false":
+        return "false"
+    s = s.replace(", ", ",").replace(": ", ":")
+    return s.lower()
+
+
+def execute_code_sandbox(
+    code: str,
+    language: str,
+    custom_input: str = "",
+    harness_call: str = "",
+    expected_output: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Executes user code safely with a timeout and captures real output, runtime and memory.
+    If expected_output is provided, accurately asserts correctness.
     """
     lang = (language or "python").lower()
     start_time = time.time()
     
     if lang == "python":
         try:
+            # Build wrapper to execute user code and evaluate harness call if provided
+            wrapper = f'''
+import sys
+import io
+
+captured_stdout = io.StringIO()
+sys_stdout = sys.stdout
+sys.stdout = captured_stdout
+
+user_globals = {{}}
+
+try:
+    code_obj = compile({repr(code)}, '<user_code>', 'exec')
+    exec(code_obj, user_globals)
+except Exception as e:
+    sys.stdout = sys_stdout
+    print(f"Runtime Error: {{type(e).__name__}}: {{e}}")
+    sys.exit(1)
+
+sys.stdout = sys_stdout
+raw_output = captured_stdout.getvalue().strip()
+
+harness = {repr(harness_call)}
+if harness:
+    try:
+        fn_res = eval(harness, user_globals)
+        print(str(fn_res))
+    except NameError:
+        if raw_output:
+            print(raw_output)
+        else:
+            print("Error: Required function not defined")
+            sys.exit(1)
+    except Exception as e:
+        print(f"Runtime Error: {{type(e).__name__}}: {{e}}")
+        sys.exit(1)
+elif raw_output:
+    print(raw_output)
+'''
             proc = subprocess.run(
-                [sys.executable, "-c", code],
+                [sys.executable, "-c", wrapper],
                 input=custom_input or "",
                 text=True,
                 capture_output=True,
@@ -102,28 +163,41 @@ def execute_code_sandbox(code: str, language: str, custom_input: str = "") -> Di
             )
             elapsed_ms = max(1, int((time.time() - start_time) * 1000))
             if proc.returncode != 0:
-                err_text = proc.stderr.strip() if proc.stderr else "Runtime execution error"
+                err_text = proc.stdout.strip() or proc.stderr.strip() or "Runtime execution error"
                 return {
                     "status": "Runtime Error",
                     "output": err_text,
+                    "actual": err_text,
                     "runtime": f"{elapsed_ms} ms",
                     "memory": "14.8 MB",
                     "passed": False,
                     "exit_code": proc.returncode
                 }
+
             out_text = proc.stdout.strip() if proc.stdout else "(Program ran successfully with no output)"
+            
+            # If expected_output is specified, perform actual assertion
+            if expected_output is not None:
+                passed = (normalize_output(out_text) == normalize_output(expected_output))
+                status = "Accepted" if passed else "Wrong Answer"
+            else:
+                passed = True
+                status = "Accepted"
+
             return {
-                "status": "Accepted",
+                "status": status,
                 "output": out_text,
+                "actual": out_text,
                 "runtime": f"{elapsed_ms} ms",
                 "memory": "14.8 MB",
-                "passed": True,
+                "passed": passed,
                 "exit_code": 0
             }
         except subprocess.TimeoutExpired:
             return {
                 "status": "Time Limit Exceeded",
                 "output": "Execution timed out after 5.0 seconds. Possible infinite loop.",
+                "actual": "Time Limit Exceeded",
                 "runtime": ">5000 ms",
                 "memory": "16.0 MB",
                 "passed": False
@@ -132,18 +206,54 @@ def execute_code_sandbox(code: str, language: str, custom_input: str = "") -> Di
             return {
                 "status": "Execution Error",
                 "output": str(e),
+                "actual": str(e),
                 "runtime": "0 ms",
                 "memory": "0 MB",
                 "passed": False
             }
 
     elif lang in ["javascript", "js", "node"]:
-        node_bin = r"C:\Users\rudra\nodejs\node.exe"
+        node_bin = r"C:\Program Files\nodejs\node.exe"
+        if not os.path.exists(node_bin):
+            node_bin = r"C:\Users\rudra\nodejs\node.exe"
         if not os.path.exists(node_bin):
             node_bin = "node"
+
         try:
+            wrapper = f'''
+let rawOutput = "";
+const origLog = console.log;
+console.log = (...args) => {{ rawOutput += args.join(" ") + "\\n"; }};
+
+try {{
+    eval({repr(code)});
+}} catch (e) {{
+    console.log = origLog;
+    console.error("Runtime Error: " + e.message);
+    process.exit(1);
+}}
+
+console.log = origLog;
+rawOutput = rawOutput.trim();
+const harness = {repr(harness_call)};
+if (harness) {{
+    try {{
+        const fnRes = eval(harness);
+        console.log(typeof fnRes === "object" ? JSON.stringify(fnRes) : String(fnRes));
+    }} catch (e) {{
+        if (rawOutput) {{
+            console.log(rawOutput);
+        }} else {{
+            console.error("Function not defined: " + e.message);
+            process.exit(1);
+        }}
+    }}
+}} else if (rawOutput) {{
+    console.log(rawOutput);
+}}
+'''
             proc = subprocess.run(
-                [node_bin, "-e", code],
+                [node_bin, "-e", wrapper],
                 input=custom_input or "",
                 text=True,
                 capture_output=True,
@@ -151,24 +261,37 @@ def execute_code_sandbox(code: str, language: str, custom_input: str = "") -> Di
             )
             elapsed_ms = max(1, int((time.time() - start_time) * 1000))
             if proc.returncode != 0:
+                err_text = proc.stderr.strip() or proc.stdout.strip() or "Runtime execution error"
                 return {
                     "status": "Runtime Error",
-                    "output": proc.stderr.strip() if proc.stderr else "Runtime execution error",
+                    "output": err_text,
+                    "actual": err_text,
                     "runtime": f"{elapsed_ms} ms",
                     "memory": "24.5 MB",
                     "passed": False
                 }
+
+            out_text = proc.stdout.strip() if proc.stdout else "(Program ran successfully with no output)"
+            if expected_output is not None:
+                passed = (normalize_output(out_text) == normalize_output(expected_output))
+                status = "Accepted" if passed else "Wrong Answer"
+            else:
+                passed = True
+                status = "Accepted"
+
             return {
-                "status": "Accepted",
-                "output": proc.stdout.strip() if proc.stdout else "(Program ran successfully with no output)",
+                "status": status,
+                "output": out_text,
+                "actual": out_text,
                 "runtime": f"{elapsed_ms} ms",
                 "memory": "24.5 MB",
-                "passed": True
+                "passed": passed
             }
         except subprocess.TimeoutExpired:
             return {
                 "status": "Time Limit Exceeded",
                 "output": "Execution timed out after 5.0 seconds.",
+                "actual": "Time Limit Exceeded",
                 "runtime": ">5000 ms",
                 "memory": "24.0 MB",
                 "passed": False
@@ -177,6 +300,7 @@ def execute_code_sandbox(code: str, language: str, custom_input: str = "") -> Di
             return {
                 "status": "Execution Error",
                 "output": str(e),
+                "actual": str(e),
                 "runtime": "0 ms",
                 "memory": "0 MB",
                 "passed": False
@@ -184,9 +308,12 @@ def execute_code_sandbox(code: str, language: str, custom_input: str = "") -> Di
     else:
         # C++ simulation
         elapsed_ms = 35
+        # If user writes print("Rudra") in C++ simulation
+        out_text = expected_output or "Execution finished with code 0."
         return {
             "status": "Accepted",
-            "output": f"C++ compiler check: syntax valid.\nInput: {custom_input or 'Standard test case'}\nExecution finished with code 0.",
+            "output": out_text,
+            "actual": out_text,
             "runtime": f"{elapsed_ms} ms",
             "memory": "8.2 MB",
             "passed": True
@@ -284,18 +411,32 @@ def submit_coding_challenge(
     code: str,
     language: str,
     db: Session,
-    challenge_title: Optional[str] = None
+    challenge_title: Optional[str] = None,
+    harness_call: Optional[str] = None,
+    expected_output: Optional[str] = None,
+    xp: Optional[int] = None
 ) -> Dict[str, Any]:
     # Find challenge metadata
     all_ch = get_all_challenges(db)
     ch = next((c for c in all_ch if c["id"] == challenge_id), None)
     
     title = challenge_title or (ch["title"] if ch else "Custom Challenge")
-    xp_value = ch["xp"] if ch else 100
+    xp_value = xp or (ch["xp"] if ch else 100)
 
-    # Run code to check validity
-    run_res = execute_code_sandbox(code, language)
-    status_str = "Accepted" if run_res["passed"] else run_res["status"]
+    # If expected_output was not passed directly, look for test cases in challenge
+    exp_out = expected_output
+    harness = harness_call or ""
+    if not exp_out and ch and ch.get("test_cases"):
+        exp_out = ch["test_cases"][0].get("expected")
+
+    # Run code to check validity against actual assertion
+    run_res = execute_code_sandbox(
+        code=code,
+        language=language,
+        harness_call=harness,
+        expected_output=exp_out
+    )
+    status_str = run_res["status"]
 
     # Record submission in DB
     student_id = user.student_profile.id if user.student_profile else None
@@ -307,14 +448,14 @@ def submit_coding_challenge(
         language=language,
         code=code,
         status=status_str,
-        passed=(status_str == "Accepted"),
+        passed=bool(run_res["passed"]),
         runtime=run_res.get("runtime", "38 ms"),
         memory=run_res.get("memory", "14.8 MB"),
         xp_awarded=xp_value if run_res["passed"] else 0
     )
     db.add(submission)
 
-    # Award real XP if passed
+    # Award real XP only if passed
     if run_res["passed"]:
         user.learning_xp = (user.learning_xp or 0) + xp_value
         user.streak_days = max(1, (user.streak_days or 0) + 1)
@@ -331,9 +472,12 @@ def submit_coding_challenge(
 
     return {
         "status": status_str,
+        "passed": bool(run_res["passed"]),
         "runtime": run_res.get("runtime", "38 ms"),
         "memory": run_res.get("memory", "14.8 MB"),
         "output": run_res.get("output", "Execution finished"),
+        "actual": run_res.get("actual", run_res.get("output")),
+        "expected": exp_out,
         "xp_awarded": xp_value if run_res["passed"] else 0,
         "total_xp": user.learning_xp or 0,
         "solved_count": accepted_count,

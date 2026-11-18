@@ -18,15 +18,20 @@ router = APIRouter(prefix="/coding", tags=["Coding Arena"])
 
 class RunCodeRequest(BaseModel):
     challenge_id: Optional[str] = ""
-    language: str
+    language: str = "python"
     code: str
     custom_input: Optional[str] = ""
+    expected_output: Optional[str] = None
+    harness_call: Optional[str] = None
 
 class SubmitCodeRequest(BaseModel):
     challenge_id: str
-    language: str
+    language: str = "python"
     code: str
     challenge_title: Optional[str] = None
+    expected_output: Optional[str] = None
+    harness_call: Optional[str] = None
+    xp: Optional[int] = None
 
 class CreateChallengeRequest(BaseModel):
     title: str
@@ -61,14 +66,22 @@ def get_challenges(current_user: User = Depends(get_current_user), db: Session =
 @router.post("/run")
 def run_code(req: RunCodeRequest):
     """Executes the user's code against custom input in a real sandbox."""
-    res = execute_code_sandbox(req.code, req.language, req.custom_input or "")
+    res = execute_code_sandbox(
+        code=req.code,
+        language=req.language,
+        custom_input=req.custom_input or "",
+        harness_call=req.harness_call or "",
+        expected_output=req.expected_output
+    )
     return {
         "status": res["status"],
         "passed": 1 if res["passed"] else 0,
         "total": 1,
         "runtime": res["runtime"],
         "memory": res["memory"],
-        "output": res["output"]
+        "output": res["output"],
+        "actual": res.get("actual", res["output"]),
+        "expected": req.expected_output
     }
 
 @router.post("/submit")
@@ -84,7 +97,10 @@ def submit_code(
         code=req.code,
         language=req.language,
         db=db,
-        challenge_title=req.challenge_title
+        challenge_title=req.challenge_title,
+        harness_call=req.harness_call or "",
+        expected_output=req.expected_output,
+        xp=req.xp
     )
     return {
         "status": "success",
