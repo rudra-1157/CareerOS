@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, JSON
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, JSON, DateTime
 from app.database import Base
 
 class GithubProfile(Base):
@@ -16,6 +17,7 @@ class GithubProfile(Base):
     evidence_strength = Column(String, default="Developing")
     languages = Column(JSON, nullable=True)
     top_repositories = Column(JSON, nullable=True)
+    last_synced_at = Column(DateTime, nullable=True, default=datetime.utcnow)
 
 # Alias for compatibility with routers/services importing GitHubProfile
 GitHubProfile = GithubProfile

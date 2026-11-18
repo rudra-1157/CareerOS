@@ -60,15 +60,16 @@ const GithubPage = () => {
   };
 
   const handleSyncGithub = async (e) => {
-    e.preventDefault();
-    if (!usernameInput.trim()) return;
+    e?.preventDefault?.();
+    const username = (usernameInput || '').trim();
+    if (!username) return;
 
     setIsSyncing(true);
     try {
-      const res = await careerService.syncGitHub(usernameInput.trim());
+      const res = await careerService.syncGitHub(username);
       if (res && res.data) {
         setGithubData(res.data);
-        setToastMessage(`GitHub account @${usernameInput.trim()} synced successfully.`);
+        setToastMessage(`GitHub account @${username} synced successfully.`);
         setToastType('success');
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3500);
@@ -157,7 +158,7 @@ const GithubPage = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Public Repositories"
-              value={stats.public_repos ?? stats.publicRepos ?? 0}
+              value={stats.public_repos ?? stats.publicRepos ?? repos.length ?? 0}
               subtitle="Active Repositories"
               icon={FolderGit2}
               color="blue"
@@ -225,16 +226,16 @@ const GithubPage = () => {
                         </div>
 
                         <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
-                          {repo.desc || "No description provided."}
+                          {repo.desc || repo.description || "No description provided."}
                         </p>
 
                         <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-slate-800">
                           <span className="font-semibold text-blue-600 dark:text-blue-400">
                             {repo.language || "Multi-language"}
                           </span>
-                          {repo.url && (
+                          {(repo.url || repo.html_url) && (
                             <a
-                              href={repo.url}
+                              href={repo.url || repo.html_url}
                               target="_blank"
                               rel="noreferrer"
                               className="text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"

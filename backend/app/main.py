@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from app.config import settings
 from app.routers import (
     auth_router,
@@ -28,6 +29,21 @@ from app.data.company_seed import seed_companies_and_jobs
 
 # Create tables on startup and seed demo users
 Base.metadata.create_all(bind=engine)
+
+# --- Inline migration: add columns that may be missing on existing DBs ---
+_migrations = [
+    "ALTER TABLE github_profiles ADD COLUMN last_synced_at DATETIME",
+    "ALTER TABLE github_profiles ADD COLUMN bio TEXT",
+    "ALTER TABLE github_profiles ADD COLUMN avatar_url TEXT",
+]
+for _sql in _migrations:
+    try:
+        with engine.connect() as _conn:
+            _conn.execute(text(_sql))
+            _conn.commit()
+    except Exception:
+        pass  # column already exists — safe to ignore
+
 try:
     with SessionLocal() as _db_init:
         seed_demo_users_if_needed(_db_init)

@@ -102,23 +102,27 @@ def get_github(current_user: User = Depends(get_current_user), db: Session = Dep
     gh = db.query(GitHubProfile).filter(GitHubProfile.user_id == current_user.id).first()
     if not gh:
         return {"connected": False, "profile": None}
+    
+    last_synced = getattr(gh, "last_synced_at", None)
+    last_synced_str = last_synced.strftime("%b %d, %Y") if last_synced else "Recently"
+    
     return {
         "connected": True,
         "profile": {
             "username": gh.username,
-            "avatar_url": gh.avatar_url,
-            "bio": gh.bio,
+            "avatar_url": gh.avatar_url or f"https://avatars.githubusercontent.com/{gh.username}",
+            "bio": gh.bio or "Connected GitHub Profile",
             "stats": {
-                "public_repos": gh.public_repos,
-                "total_stars": gh.total_stars,
-                "total_commits": gh.total_commits,
-                "streak": gh.streak,
-                "github_score": gh.github_score,
-                "evidence_strength": gh.evidence_strength
+                "public_repos": gh.public_repos or 0,
+                "total_stars": gh.total_stars or 0,
+                "total_commits": gh.total_commits or 0,
+                "streak": getattr(gh, "streak", 0) or 0,
+                "github_score": gh.github_score or 50,
+                "evidence_strength": gh.evidence_strength or "Developing"
             },
             "languages": gh.languages or [],
             "top_repositories": gh.top_repositories or [],
-            "last_synced_at": gh.last_synced_at.strftime("%b %d, %Y") if gh.last_synced_at else "Recently"
+            "last_synced_at": last_synced_str
         }
     }
 
