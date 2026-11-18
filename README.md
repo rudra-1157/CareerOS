@@ -96,6 +96,16 @@ npm run dev
 
 ---
 
+## 🌐 Production Deployment
+
+Ready to take CareerOS live? See the complete [Deployment Guide](docs/deployment.md).
+
+- **Backend (Render / Railway)**: Native FastAPI environment with automatic SSL and database initialization.
+- **Frontend (Vercel / Netlify / Render)**: High-speed Edge CDN with SPA rewrites configured in `frontend/vercel.json`.
+- **1-Click Blueprint (Render)**: Deploy both frontend and backend automatically using the included `render.yaml`.
+
+---
+
 ## 💎 Features Preserved & Enhanced
 1. **Student Dashboard**: Real-time stats (Learning XP, Skill Confidence, Career Readiness, Streak), skill progress bars, and the full 4-stage student journey.
 2. **AI Learning Mentor**: Interactive multi-turn chat assistant powered by Groq (LLaMA 3.3 70B) and Institutional RAG, alongside institutional syllabus resources.
