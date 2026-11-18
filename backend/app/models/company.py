@@ -60,12 +60,24 @@ class JobApplication(Base):
     matching_skills = Column(Text, nullable=True)  # JSON or comma-separated
     missing_skills = Column(Text, nullable=True)   # JSON or comma-separated
     resume_name = Column(String, nullable=True)
+    cover_letter = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     applied_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     job = relationship("Job", back_populates="applications")
     student = relationship("User")
+
+
+class SavedJob(Base):
+    __tablename__ = "saved_jobs"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    job = relationship("Job")
+    user = relationship("User")
 
 
 class SavedCompany(Base):

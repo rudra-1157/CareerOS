@@ -44,7 +44,7 @@ const studentNavSections = [
       { path: '/roadmap', label: 'Personalized Roadmap', icon: Map, tag: 'Milestones' },
       { path: '/passport', label: 'Skill Passport', icon: ShieldCheck, tag: 'Verified Skills' },
       { path: '/projects', label: 'Capstone Projects', icon: FolderGit2, tag: 'Attested Artifacts' },
-      { path: '/jobs', label: 'Job Portal', icon: Briefcase, tag: 'Companies & Jobs' },
+      { path: '/jobs', label: 'Job Marketplace', icon: Briefcase, tag: 'Jobs & Internships' },
     ]
   },
   {

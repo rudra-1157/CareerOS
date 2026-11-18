@@ -20,8 +20,18 @@ import StatCard from '../components/common/StatCard';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import Avatar from '../components/common/Avatar';
+import { useAuth } from '../context/AuthContext';
+import JobPortalPage from './JobPortalPage';
 
 const CompanyPage = () => {
+  const { user } = useAuth();
+  const userRole = (user?.role || 'student').toLowerCase();
+
+  // Students see the Student-Centric Job & Internship Marketplace
+  if (userRole === 'student') {
+    return <JobPortalPage />;
+  }
+
   const { openModal } = useModal();
   const [candidates, setCandidates] = useState(initialCompanyData.candidates || []);
   const [searchTerm, setSearchTerm] = useState('');

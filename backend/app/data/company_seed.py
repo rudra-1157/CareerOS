@@ -993,33 +993,254 @@ JOBS = [
         "openings": 200,
         "is_demo": True,
     },
+
+    # ── DEDICATED STUDENT INTERNSHIP ROLES ────────────────────────────────────
+    {
+        "company_name": "Google",
+        "title": "Python Developer Intern",
+        "domain": "Software Development",
+        "description": (
+            "Work alongside Google software engineers to design, implement, and test core Python "
+            "automation frameworks and internal developer APIs. You will contribute to scalable backends, "
+            "write automated test suites, and participate in peer code reviews."
+        ),
+        "required_skills": "Python,Data Structures,Algorithms,OOP,Git,Unit Testing",
+        "preferred_skills": "FastAPI,Django,Docker,Linux,REST APIs",
+        "eligibility_criteria": "Pursuing B.Tech/B.E./MCA in CS or allied fields; 7.0+ CGPA",
+        "min_cgpa": 7.0,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Bengaluru / Hyderabad",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹1,10,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 30,
+        "is_demo": True,
+    },
+    {
+        "company_name": "NVIDIA",
+        "title": "AI/ML Intern",
+        "domain": "AI & Machine Learning",
+        "description": (
+            "Join NVIDIA's Applied Deep Learning team to build and evaluate deep neural networks, "
+            "GPU-accelerated pipelines, and computer vision or NLP benchmarks. Real-world exposure "
+            "to CUDA acceleration and PyTorch model quantization."
+        ),
+        "required_skills": "Python,PyTorch,Machine Learning,Deep Learning,NumPy,Linear Algebra",
+        "preferred_skills": "TensorFlow,CUDA,OpenCV,Scikit-learn,Transformers",
+        "eligibility_criteria": "Pre-final or final year engineering students with ML coursework",
+        "min_cgpa": 7.5,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Pune / Bengaluru",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹1,25,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 25,
+        "is_demo": True,
+    },
+    {
+        "company_name": "Deloitte",
+        "title": "Data Analyst Intern",
+        "domain": "Data Science & Analytics",
+        "description": (
+            "Analyze large multi-dimensional enterprise datasets, build interactive executive dashboards, "
+            "and create actionable statistical insights for global clients across BFSI and retail."
+        ),
+        "required_skills": "SQL,Python,Excel,Data Visualization,Statistics,Pandas",
+        "preferred_skills": "Tableau,Power BI,Data Wrangling,Business Intelligence",
+        "eligibility_criteria": "Any engineering or analytics degree; 6.5+ CGPA",
+        "min_cgpa": 6.5,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Gurugram / Mumbai / Bengaluru",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹45,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 50,
+        "is_demo": True,
+    },
+    {
+        "company_name": "Freshworks",
+        "title": "Full Stack Developer Intern",
+        "domain": "Product Development",
+        "description": (
+            "Contribute across the entire web stack: build responsive user interfaces in React and robust "
+            "RESTful microservices in Node.js or Ruby. Learn best practices for testing, CI/CD, and SaaS architecture."
+        ),
+        "required_skills": "JavaScript,React,Node.js,HTML/CSS,SQL,Git",
+        "preferred_skills": "TypeScript,PostgreSQL,Tailwind CSS,REST APIs,Docker",
+        "eligibility_criteria": "B.Tech/B.E. in CS/IT or strong project portfolio",
+        "min_cgpa": 6.5,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Chennai / Bengaluru",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹60,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 40,
+        "is_demo": True,
+    },
+    {
+        "company_name": "BrowserStack",
+        "title": "Frontend Developer Intern",
+        "domain": "Product Development",
+        "description": (
+            "Work on cutting-edge developer platforms with seamless UI/UX. Build high-performance React "
+            "components, optimize Core Web Vitals, and implement responsive designs for millions of developers."
+        ),
+        "required_skills": "JavaScript,React,HTML5,CSS3,TypeScript,DOM Manipulation",
+        "preferred_skills": "Tailwind CSS,Redux,Next.js,Jest,Web Performance",
+        "eligibility_criteria": "Strong frontend projects on GitHub; 7.0+ CGPA",
+        "min_cgpa": 7.0,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Mumbai, India",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹70,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 20,
+        "is_demo": True,
+    },
+    {
+        "company_name": "Razorpay",
+        "title": "Backend Developer Intern",
+        "domain": "Product Development",
+        "description": (
+            "Build resilient, high-throughput microservices powering India's largest payment gateway. "
+            "Learn database query optimization, asynchronous message queues with Kafka, and caching with Redis."
+        ),
+        "required_skills": "Python,Go,SQL,Data Structures,Algorithms,OOP,REST APIs",
+        "preferred_skills": "PostgreSQL,Redis,Kafka,Docker,Microservices Architecture",
+        "eligibility_criteria": "Engineering students graduating in 2025/2026; 7.0+ CGPA",
+        "min_cgpa": 7.0,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Bengaluru, India",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹80,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 35,
+        "is_demo": True,
+    },
+    {
+        "company_name": "TCS",
+        "title": "Java Developer Intern",
+        "domain": "Software Development",
+        "description": (
+            "Develop robust enterprise Java solutions using Spring Boot and microservices architecture. "
+            "Write clean code, build API integrations, and gain hands-on experience in corporate enterprise environments."
+        ),
+        "required_skills": "Java,OOP,Data Structures,SQL,Git,Spring Framework",
+        "preferred_skills": "Spring Boot,Hibernate,REST APIs,Maven,JUnit",
+        "eligibility_criteria": "B.Tech/B.E./MCA; 60%+ in aggregate",
+        "min_cgpa": 6.0,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Pan India / Hybrid",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹35,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 100,
+        "is_demo": True,
+    },
+    {
+        "company_name": "Amazon Web Services",
+        "title": "Cloud Engineering Intern",
+        "domain": "Cloud & DevOps",
+        "description": (
+            "Explore cloud infrastructure automation, serverless computing with AWS Lambda, and container orchestration. "
+            "Help design reliable, multi-region distributed cloud architectures with Terraform."
+        ),
+        "required_skills": "Linux,Python,Networking,Cloud Fundamentals,Bash,Git",
+        "preferred_skills": "AWS Services,Terraform,Docker,Kubernetes,CI/CD Pipelines",
+        "eligibility_criteria": "Enrolled in engineering degree with cloud computing interest",
+        "min_cgpa": 7.0,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Bengaluru / Hyderabad",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹1,15,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 45,
+        "is_demo": True,
+    },
+    {
+        "company_name": "Cisco",
+        "title": "Cybersecurity Intern",
+        "domain": "Cybersecurity",
+        "description": (
+            "Gain hands-on experience in threat detection, vulnerability assessments, network protocol security, "
+            "and defensive monitoring. Learn to use SIEM tools and security automation scripts."
+        ),
+        "required_skills": "Networking,TCP/IP,Linux,Python,Security Concepts,Cryptography",
+        "preferred_skills": "Wireshark,Firewalls,Vulnerability Scanning,CTF experience,CCNA",
+        "eligibility_criteria": "B.Tech in CS/IT/ECE; strong interest in security and networks",
+        "min_cgpa": 6.5,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Bengaluru, India",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹75,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 30,
+        "is_demo": True,
+    },
+    {
+        "company_name": "Microsoft",
+        "title": "Generative AI Intern",
+        "domain": "AI & Machine Learning",
+        "description": (
+            "Work with cutting-edge Large Language Models, prompt orchestration, RAG architectures, and fine-tuning. "
+            "Build practical generative applications integrating Azure OpenAI and semantic search."
+        ),
+        "required_skills": "Python,Machine Learning,NLP,Deep Learning,Data Structures,API Integration",
+        "preferred_skills": "LangChain,Hugging Face,Vector Databases,Azure AI,PyTorch",
+        "eligibility_criteria": "B.Tech/M.Tech in CS/Data Science; prior GenAI projects preferred",
+        "min_cgpa": 7.5,
+        "experience_level": "Internship",
+        "job_type": "Internship",
+        "location": "Bengaluru / Hyderabad",
+        "work_mode": "Hybrid",
+        "stipend_range": "₹1,30,000 / month",
+        "deadline": "Rolling Admissions",
+        "openings": 25,
+        "is_demo": True,
+    },
 ]
 
 
 def seed_companies_and_jobs(db: Session) -> None:
     """
-    Idempotent seed function. Inserts demo companies and their jobs only if
-    no demo companies exist yet. Safe to call on every application startup.
+    Seed demo companies and jobs. Checks for missing listings and seeds them idempotently.
     """
-    existing = db.query(Company).filter(Company.is_demo == True).count()
-    if existing > 0:
-        return  # Already seeded
+    company_count = db.query(Company).filter(Company.is_demo == True).count()
+    if company_count == 0:
+        company_map: dict[str, Company] = {}
+        for data in COMPANIES:
+            company = Company(**data)
+            db.add(company)
+            db.flush()
+            company_map[data["name"]] = company
+    else:
+        all_comps = db.query(Company).all()
+        company_map = {c.name: c for c in all_comps}
 
-    # Build a name->Company map so we can link jobs
-    company_map: dict[str, Company] = {}
-    for data in COMPANIES:
-        company = Company(**data)
-        db.add(company)
-        db.flush()  # get company.id before committing
-        company_map[data["name"]] = company
-
+    # Ensure all jobs are present
     for job_data in JOBS:
-        company_name = job_data.pop("company_name")
+        data_copy = dict(job_data)
+        company_name = data_copy.pop("company_name")
         company = company_map.get(company_name)
         if not company:
             continue
-        job = Job(company_id=company.id, **job_data)
-        db.add(job)
+        exists = db.query(Job).filter(
+            Job.company_id == company.id,
+            Job.title == data_copy["title"]
+        ).first()
+        if not exists:
+            job = Job(company_id=company.id, **data_copy)
+            db.add(job)
 
     db.commit()
-    print(f"[seed] ✅ Seeded {len(COMPANIES)} demo companies and {len(JOBS)} demo jobs.")
+    total_jobs = db.query(Job).count()
+    print(f"[seed] ✅ Seeded companies & jobs verified. Total jobs in DB: {total_jobs}")

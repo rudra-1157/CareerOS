@@ -395,6 +395,26 @@ export const demoService = {
 
 // ─── Job Portal & Companies ───────────────────────────────────────────────────
 export const jobsService = {
+  // Marketplace Overview Stats
+  getMarketplaceStats: async () => {
+    const response = await apiClient.get('/marketplace/stats');
+    return response.data;
+  },
+
+  // Student Resume
+  getMyResume: async () => {
+    const response = await apiClient.get('/resume/my');
+    return response.data;
+  },
+  uploadResume: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/resume/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
   // Companies
   getCompanies: async (domain = '', search = '') => {
     const params = new URLSearchParams();
@@ -416,12 +436,14 @@ export const jobsService = {
     return response.data;
   },
 
-  // Jobs
-  getJobs: async (domain = '', search = '', company_id = null) => {
+  // Jobs & Internships
+  getJobs: async ({ domain = '', search = '', type = '', workMode = '', companyId = null } = {}) => {
     const params = new URLSearchParams();
     if (domain) params.append('domain', domain);
     if (search) params.append('search', search);
-    if (company_id) params.append('company_id', company_id);
+    if (type) params.append('type', type);
+    if (workMode) params.append('work_mode', workMode);
+    if (companyId) params.append('company_id', companyId);
     const response = await apiClient.get(`/jobs${params.toString() ? '?' + params : ''}`);
     return response.data;
   },
@@ -433,18 +455,45 @@ export const jobsService = {
     const response = await apiClient.get(`/jobs/${jobId}/match`);
     return response.data;
   },
-  getRecommendedJobs: async () => {
-    const response = await apiClient.get('/jobs/recommended');
+  getRecommendedJobs: async (limit = 8) => {
+    const response = await apiClient.get(`/jobs/recommended?limit=${limit}`);
+    return response.data;
+  },
+
+  // Saved Jobs
+  getSavedJobs: async () => {
+    const response = await apiClient.get('/saved-jobs');
+    return response.data;
+  },
+  saveJob: async (jobId) => {
+    const response = await apiClient.post(`/saved-jobs/${jobId}`);
+    return response.data;
+  },
+  removeSavedJob: async (jobId) => {
+    const response = await apiClient.delete(`/saved-jobs/${jobId}`);
     return response.data;
   },
 
   // Applications
-  applyForJob: async (jobId, resumeName = '') => {
-    const response = await apiClient.post(`/jobs/${jobId}/apply`, { resume_name: resumeName });
+  applyForJob: async (jobId, { resumeName = '', coverLetter = '', resumeFile = null } = {}) => {
+    const formData = new FormData();
+    if (resumeName) formData.append('resume_name', resumeName);
+    if (coverLetter) formData.append('cover_letter', coverLetter);
+    if (resumeFile) formData.append('resume_file', resumeFile);
+
+    const response = await apiClient.post(`/jobs/${jobId}/apply`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
   getMyApplications: async () => {
     const response = await apiClient.get('/applications/my');
+    return response.data;
+  },
+
+  // AI Career Advice
+  getAiExplanation: async (jobId) => {
+    const response = await apiClient.post(`/jobs/${jobId}/ai-explanation`);
     return response.data;
   },
 
@@ -456,6 +505,10 @@ export const jobsService = {
   getRecruiterApplications: async (jobId = null) => {
     const params = jobId ? `?job_id=${jobId}` : '';
     const response = await apiClient.get(`/recruiter/applications${params}`);
+    return response.data;
+  },
+  updateApplicationStatus: async (applicationId, status) => {
+    const response = await apiClient.put(`/recruiter/applications/${applicationId}/status`, { status });
     return response.data;
   },
 };
