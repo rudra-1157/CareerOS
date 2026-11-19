@@ -136,7 +136,25 @@ export const adminService = {
     } catch {
       return null;
     }
-  }
+  },
+  getUsers: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/admin/users', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to load user database:', error);
+      return { total: 0, users: [] };
+    }
+  },
+  getUserStats: async () => {
+    try {
+      const response = await apiClient.get('/admin/users/stats');
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+  getExportUrl: () => `${API_BASE_URL}/admin/users/export`
 };
 
 // ─── AI Mentor ────────────────────────────────────────────────────────────────

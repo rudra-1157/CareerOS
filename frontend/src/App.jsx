@@ -204,11 +204,11 @@ function App() {
                     }
                   />
 
-                  {/* Administrator Route */}
+                  {/* Administrator Route - Student Database */}
                   <Route
                     path="/admin"
                     element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'student', 'faculty']}>
                         <AdminDashboardPage />
                       </ProtectedRoute>
                     }

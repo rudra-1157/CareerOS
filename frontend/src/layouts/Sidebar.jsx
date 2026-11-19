@@ -16,6 +16,7 @@ import {
   Settings,
   GraduationCap,
   ShieldAlert,
+  Database,
   LogOut,
   X,
   User,
@@ -48,8 +49,9 @@ const studentNavSections = [
     ]
   },
   {
-    heading: 'Preferences',
+    heading: 'Administration',
     items: [
+      { path: '/admin', label: 'Student Database', icon: Database, tag: 'Directory' },
       { path: '/settings', label: 'Settings', icon: Settings, tag: 'Workspace' },
     ]
   }
@@ -60,6 +62,7 @@ const facultyNavSections = [
     heading: 'Faculty Command',
     items: [
       { path: '/faculty', label: 'Faculty Dashboard', icon: GraduationCap, tag: 'Cohorts' },
+      { path: '/admin', label: 'Student Database', icon: Database, tag: 'Directory' },
       { path: '/companies', label: 'Candidate Discovery', icon: Building2, tag: 'Talent' },
       { path: '/settings', label: 'Settings', icon: Settings, tag: 'Preferences' },
     ]
@@ -70,7 +73,7 @@ const adminNavSections = [
   {
     heading: 'Institutional Admin',
     items: [
-      { path: '/admin', label: 'Admin Command Center', icon: ShieldAlert, tag: 'Institutional' },
+      { path: '/admin', label: 'Student & User Database', icon: Database, tag: 'Live Directory' },
       { path: '/companies', label: 'Placement Pipeline', icon: Building2, tag: 'Recruiters' },
       { path: '/settings', label: 'Settings', icon: Settings, tag: 'Preferences' },
     ]
