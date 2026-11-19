@@ -8,8 +8,11 @@ class Skill(Base):
     name = Column(String, index=True, nullable=False)
     category = Column(String, nullable=True)
     percentage = Column(Integer, default=50)
+    confidence = Column(String, nullable=True)
     status = Column(String, default="Developing")
+    level = Column(String, nullable=True)
     evidence = Column(String, nullable=True)
+    verified_date = Column(String, nullable=True)
 
 class StudentSkill(Base):
     __tablename__ = "student_skills"

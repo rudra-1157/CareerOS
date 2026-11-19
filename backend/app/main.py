@@ -35,6 +35,9 @@ _migrations = [
     "ALTER TABLE github_profiles ADD COLUMN last_synced_at DATETIME",
     "ALTER TABLE github_profiles ADD COLUMN bio TEXT",
     "ALTER TABLE github_profiles ADD COLUMN avatar_url TEXT",
+    "ALTER TABLE skills ADD COLUMN confidence TEXT",
+    "ALTER TABLE skills ADD COLUMN level TEXT",
+    "ALTER TABLE skills ADD COLUMN verified_date TEXT",
 ]
 for _sql in _migrations:
     try:

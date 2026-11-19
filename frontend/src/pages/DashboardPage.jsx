@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Zap,
@@ -17,10 +17,13 @@ import {
   Sparkles,
   Award,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  X
 } from 'lucide-react';
 import { useCareer } from '../context/CareerContext';
 import { useModal } from '../context/ModalContext';
+import { passportService } from '../services/api';
 import StatCard from '../components/common/StatCard';
 import SkillCard from '../components/common/SkillCard';
 import Button from '../components/common/Button';
@@ -37,9 +40,41 @@ const journeyMilestones = [
 ];
 
 const DashboardPage = () => {
-  const { studentData } = useCareer();
+  const { studentData, refreshData } = useCareer();
   const { openModal } = useModal();
   const navigate = useNavigate();
+
+  const [showAddSkillModal, setShowAddSkillModal] = useState(false);
+  const [newSkill, setNewSkill] = useState({
+    name: '',
+    category: 'Core Programming',
+    percentage: 75,
+    evidence: 'Coursework & Practice'
+  });
+  const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [addSkillError, setAddSkillError] = useState('');
+
+  const handleAddSkillFromDashboard = async (e) => {
+    e.preventDefault();
+    if (!newSkill.name.trim()) return;
+    setIsAddingSkill(true);
+    setAddSkillError('');
+    try {
+      await passportService.addSkill({
+        name: newSkill.name.trim(),
+        category: newSkill.category,
+        percentage: parseInt(newSkill.percentage) || 75,
+        evidence: newSkill.evidence
+      });
+      setShowAddSkillModal(false);
+      setNewSkill({ name: '', category: 'Core Programming', percentage: 75, evidence: 'Coursework & Practice' });
+      if (refreshData) refreshData();
+    } catch (err) {
+      setAddSkillError(err.response?.data?.detail || 'Failed to add skill. Please try again.');
+    } finally {
+      setIsAddingSkill(false);
+    }
+  };
 
   const { 
     profile = {}, 
@@ -239,23 +274,33 @@ const DashboardPage = () => {
             title="Skill Progress & Evidence"
             subtitle="Verified against coursework, coding benchmarks & GitHub activity"
             action={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/passport')}
-              >
-                View Passport
-                <ChevronRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddSkillModal(true)}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Add Skill
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/passport')}
+                >
+                  View Passport
+                  <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
             }
           >
             {(!skills || skills.length === 0) ? (
               <EmptyState
                 icon={ShieldCheck}
                 title="No skills logged yet"
-                description="Add your first skill in the Skill Passport to begin building evidence for campus recruiters."
-                actionText="Open Skill Passport"
-                onAction={() => navigate('/passport')}
+                description="Add your first skill directly here or in the Skill Passport to begin building evidence for campus recruiters."
+                actionText="+ Add First Skill"
+                onAction={() => setShowAddSkillModal(true)}
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -448,6 +493,112 @@ const DashboardPage = () => {
           </div>
         </Card>
       </div>
+
+      {/* Add Skill Modal on Dashboard */}
+      {showAddSkillModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <button
+              onClick={() => setShowAddSkillModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="mb-4">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-blue-500" />
+                Add Skill to Passport
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Record your verified programming languages, tools, or CS competencies.
+              </p>
+            </div>
+
+            {addSkillError && (
+              <div className="mb-3 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-300">
+                {addSkillError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddSkillFromDashboard} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Skill Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newSkill.name}
+                  onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
+                  placeholder="e.g. Python, React, Docker, SQL, DSA"
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Category
+                </label>
+                <select
+                  value={newSkill.category}
+                  onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Core Programming">Core Programming</option>
+                  <option value="Web & Full-Stack">Web & Full-Stack</option>
+                  <option value="AI / Machine Learning">AI / Machine Learning</option>
+                  <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
+                  <option value="Cloud & DevOps">Cloud & DevOps</option>
+                  <option value="Database Systems">Database Systems</option>
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    Self-Assessed Confidence
+                  </label>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                    {newSkill.percentage}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="20"
+                  max="100"
+                  step="5"
+                  value={newSkill.percentage}
+                  onChange={(e) => setNewSkill({ ...newSkill, percentage: e.target.value })}
+                  className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Evidence Trail
+                </label>
+                <input
+                  type="text"
+                  value={newSkill.evidence}
+                  onChange={(e) => setNewSkill({ ...newSkill, evidence: e.target.value })}
+                  placeholder="e.g. Coursework, GitHub repositories, lab submissions"
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <Button variant="ghost" size="sm" onClick={() => setShowAddSkillModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" size="sm" loading={isAddingSkill}>
+                  Save to Passport & Dashboard
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

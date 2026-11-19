@@ -104,7 +104,15 @@ export const CareerProvider = ({ children }) => {
   }, [refreshDashboard]);
 
   return (
-    <CareerContext.Provider value={{ studentData, setStudentData, loading, error, refreshDashboard }}>
+    <CareerContext.Provider value={{ 
+      studentData, 
+      setStudentData, 
+      loading, 
+      error, 
+      refreshDashboard,
+      refreshData: refreshDashboard,
+      refreshStudentData: refreshDashboard 
+    }}>
       {children}
     </CareerContext.Provider>
   );
