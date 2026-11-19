@@ -220,11 +220,9 @@ const LandingPage = () => {
               </Button>
             ) : (
               <>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Sign In
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
+                  Sign In
+                </Button>
                 <Button variant="primary" size="sm" onClick={handlePortalAccess}>
                   Go to Dashboard
                   <ArrowRight className="w-3.5 h-3.5 ml-1" />

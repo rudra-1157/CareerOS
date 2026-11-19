@@ -93,9 +93,9 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 font-sans">
-      
+
       <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-6 sm:p-8">
-        
+
         {/* Header */}
         <div className="text-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
@@ -127,7 +127,7 @@ const RegisterPage = () => {
 
         {/* Form */}
         <form onSubmit={handleRegister} className="space-y-4">
-          
+
           {/* Section 1: Core Credentials */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
@@ -144,7 +144,7 @@ const RegisterPage = () => {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="e.g. Sahil Shinde"
+                  placeholder="Student Name"
                   className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
