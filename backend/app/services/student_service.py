@@ -1,5 +1,6 @@
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.models.user import User, StudentProfile
 from app.models.skill import StudentSkill, Skill
 from app.models.project import Project
@@ -38,28 +39,31 @@ def get_student_dashboard_data(user: User, db: Session) -> Dict[str, Any]:
         db.refresh(profile)
 
     student_id = profile.id
-    # Query user's actual database records (both from direct Skill records and legacy StudentSkill join)
-    user_skills = db.query(Skill).filter(Skill.user_id == user.id).all()
-    if not user_skills:
-        # Fallback to join
-        legacy_skills = db.query(StudentSkill, Skill).join(Skill).filter(StudentSkill.student_id == student_id).all()
-        user_skills = [s[1] for s in legacy_skills]
-
-    projects = db.query(Project).filter(Project.student_id == student_id).all()
+    # Query user's actual database records
+    user_skills = db.query(Skill).filter(Skill.user_id == user.id).order_by(Skill.id.desc()).all()
+    student_skills = db.query(StudentSkill, Skill).join(Skill).filter(StudentSkill.student_id == student_id).all() if not user_skills else []
+    
+    projects = db.query(Project).filter(or_(Project.user_id == user.id, Project.student_id == student_id)).all()
     resume = db.query(Resume).filter(Resume.student_id == student_id).first()
     resume_analysis = db.query(ResumeAnalysis).filter(ResumeAnalysis.resume_id == resume.id).first() if resume else None
-    github = db.query(GithubProfile).filter(GithubProfile.student_id == student_id).first()
-    submissions = db.query(CodingSubmission).filter(CodingSubmission.student_id == student_id).limit(10).all()
+    github = db.query(GithubProfile).filter(or_(GithubProfile.user_id == user.id, GithubProfile.student_id == student_id)).first()
+    submissions = db.query(CodingSubmission).filter(or_(CodingSubmission.user_id == user.id, CodingSubmission.student_id == student_id)).order_by(CodingSubmission.id.desc()).limit(10).all()
 
-    # Calculate real skill confidence
-    if user_skills:
-        avg_confidence = round(sum(s.percentage or 50 for s in user_skills) / len(user_skills))
+    # Calculate evidence-based skill confidence (only verified skills)
+    verified_skills = [s for s in user_skills if s.status == "Verified"]
+    if verified_skills:
+        avg_confidence = round(sum(s.percentage for s in verified_skills) / len(verified_skills))
+        has_sufficient_evidence = True
+    elif student_skills:
+        avg_confidence = round(sum(ss[0].proficiency for ss in student_skills) / len(student_skills))
+        has_sufficient_evidence = True
     else:
         avg_confidence = 0
+        has_sufficient_evidence = False
 
     # Calculate real career readiness score based on evidence:
     readiness_components = []
-    if user_skills:
+    if avg_confidence > 0:
         readiness_components.append(avg_confidence * 0.3)
     if projects:
         proj_score = min(100, len(projects) * 25)
@@ -75,23 +79,73 @@ def get_student_dashboard_data(user: User, db: Session) -> Dict[str, Any]:
     career_readiness = round(sum(readiness_components)) if readiness_components else 0
 
     user_initials = "".join([n[0] for n in user.name.split()[:2]]).upper() if user.name else "ST"
-    completion_pct = calculate_profile_completion(user, profile, bool(resume), bool(github), len(user_skills), len(projects))
+    skills_count = len(user_skills) if user_skills else len(student_skills)
+    completion_pct = calculate_profile_completion(user, profile, bool(resume), bool(github), skills_count, len(projects))
 
     # Format skills for frontend
-    formatted_skills = [
-        {
-            "id": s.id,
-            "name": s.name,
-            "category": s.category or "General",
-            "percentage": s.percentage or 50,
-            "confidence": s.confidence or f"{s.percentage or 50}%",
-            "evidence": s.evidence or "Coursework & Laboratory",
-            "status": s.status or ("Verified" if (s.percentage or 50) >= 70 else "Developing"),
-            "level": s.level or ("Advanced" if (s.percentage or 50) >= 80 else "Intermediate"),
-            "verifiedDate": s.verified_date or "Verified"
-        }
-        for s in user_skills
-    ]
+    if user_skills:
+        formatted_skills = [
+            {
+                "id": s.id,
+                "name": s.name,
+                "category": s.category or "General",
+                "percentage": s.percentage or 50,
+                "confidence": f"{s.percentage or 50}%",
+                "evidence": s.evidence or f"{len(s.evidences or [])} Evidence Records",
+                "status": s.status,
+                "level": s.proficiency_level or "Intermediate",
+                "verifiedDate": s.verified_date.strftime("%b %d, %Y") if s.verified_date else ("In Review" if s.status == "Pending Review" else "Self-Declared")
+            }
+            for s in user_skills
+        ]
+    else:
+        formatted_skills = [
+            {
+                "id": ss[0].id,
+                "name": ss[1].name,
+                "category": ss[1].category or "General",
+                "percentage": ss[0].proficiency,
+                "confidence": f"{ss[0].proficiency}%",
+                "evidence": "Coursework & Laboratory",
+                "status": "Verified" if ss[0].proficiency >= 70 else "Developing",
+                "level": "Advanced" if ss[0].proficiency >= 80 else "Intermediate",
+                "verifiedDate": "Verified"
+            }
+            for ss in student_skills
+        ]
+
+    # Compact Skill Passport summary for dashboard widget
+    pending_verifications = [s for s in user_skills if s.status in ["Pending Review", "Evidence Submitted"]]
+    needs_attention = [s for s in user_skills if s.status in ["Needs Improvement", "Rejected"]]
+    skill_passport_summary = {
+        "total_skills": len(user_skills),
+        "verified_skills_count": len(verified_skills),
+        "pending_verifications_count": len(pending_verifications),
+        "needs_attention_count": len(needs_attention),
+        "overall_confidence": f"{avg_confidence}%" if has_sufficient_evidence else "0%",
+        "has_sufficient_evidence": has_sufficient_evidence,
+        "recently_updated_skills": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "category": s.category,
+                "percentage": s.percentage,
+                "proficiency_level": s.proficiency_level or "Intermediate",
+                "status": s.status,
+                "evidence_count": len(s.evidences or [])
+            }
+            for s in user_skills[:4]
+        ],
+        "needs_attention_skills": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "status": s.status,
+                "reason": s.rejection_reason or s.verification_comments or "Improvement required"
+            }
+            for s in needs_attention[:3]
+        ]
+    }
 
     # Format recent activity from actual events
     recent_activity = []
@@ -123,7 +177,7 @@ def get_student_dashboard_data(user: User, db: Session) -> Dict[str, Any]:
         action_summary = "Select your desired engineering track (Software Engineer, AI/ML Specialist, Full-Stack Dev) to activate personalized curriculum roadmaps."
         action_label = "Configure Target Role"
         action_route = "/profile"
-    elif not user_skills:
+    elif not user_skills and not student_skills:
         action_headline = "Add Foundation Skills to Passport"
         action_summary = "Add programming languages and core CS competencies to build your verified evidence ledger."
         action_label = "Add Core Skills"
@@ -173,7 +227,7 @@ def get_student_dashboard_data(user: User, db: Session) -> Dict[str, Any]:
             "learning_xp": learning_xp,
             "xp_this_week": f"+{learning_xp} this week" if learning_xp > 0 else "0 XP this week",
             "skill_confidence": f"{avg_confidence}%",
-            "skill_subtitle": "Evidence-based profile" if user_skills else "No skills added yet",
+            "skill_subtitle": "Evidence-based profile" if (user_skills or student_skills) else "No skills added yet",
             "career_readiness": f"{career_readiness}%",
             "career_subtitle": f"Target: {profile.career_goal}" if profile.career_goal else "Choose a career goal",
             "streak_days": str(user.streak_days or 0),
@@ -183,11 +237,12 @@ def get_student_dashboard_data(user: User, db: Session) -> Dict[str, Any]:
             "verified_projects": len(projects)
         },
         "skills": formatted_skills,
+        "skill_passport_summary": skill_passport_summary,
         "journey_steps": [
             {"step": 1, "icon": "BookOpen", "title": "Learn", "desc": "Institution resources & AI Mentor", "progress": "100%"},
             {"step": 2, "icon": "Code2", "title": "Practice", "desc": "Coding challenges & XP tracking", "progress": f"{min(100, len(submissions) * 20)}%"},
             {"step": 3, "icon": "FolderGit2", "title": "Build", "desc": "Projects & GitHub evidence", "progress": f"{min(100, len(projects) * 25)}%"},
-            {"step": 4, "icon": "ShieldCheck", "title": "Verify", "desc": "Faculty review & skill assessments", "progress": f"{min(100, len(user_skills) * 25)}%"},
+            {"step": 4, "icon": "ShieldCheck", "title": "Verify", "desc": "Faculty review & skill assessments", "progress": f"{min(100, len(user_skills or student_skills) * 25)}%"},
             {"step": 5, "icon": "Award", "title": "Showcase", "desc": "Verified Skill Passport for recruiters", "progress": f"{career_readiness}%"},
             {"step": 6, "icon": "Target", "title": "Get Hired", "desc": "Campus placement drives", "progress": f"{max(0, career_readiness - 15)}%"}
         ],

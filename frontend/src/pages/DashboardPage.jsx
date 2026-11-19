@@ -31,6 +31,7 @@ import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import ProgressBar from '../components/common/ProgressBar';
 import EmptyState from '../components/common/EmptyState';
+import SkillPassportWidget from '../components/dashboard/SkillPassportWidget';
 
 const journeyMilestones = [
   { step: 1, key: 'learn', title: '1st Year: Learn', desc: 'Institutional syllabus, core CS foundations & AI Mentor', icon: BookOpen },
@@ -271,8 +272,8 @@ const DashboardPage = () => {
           
           {/* Skill Progress Card */}
           <Card
-            title="Skill Progress & Evidence"
-            subtitle="Verified against coursework, coding benchmarks & GitHub activity"
+            title="Skill Passport & Competency Ledger"
+            subtitle="Real-time verified technical skills backed by faculty attestations and code repositories"
             action={
               <div className="flex items-center gap-2">
                 <Button
@@ -294,33 +295,11 @@ const DashboardPage = () => {
               </div>
             }
           >
-            {(!skills || skills.length === 0) ? (
-              <EmptyState
-                icon={ShieldCheck}
-                title="No skills logged yet"
-                description="Add your first skill directly here or in the Skill Passport to begin building evidence for campus recruiters."
-                actionText="+ Add First Skill"
-                onAction={() => setShowAddSkillModal(true)}
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {skills.slice(0, 4).map((skill, idx) => (
-                  <SkillCard
-                    key={idx}
-                    name={skill.name}
-                    percentage={skill.percentage}
-                    evidence={skill.evidence}
-                    status={skill.status}
-                    level={skill.level}
-                    category={skill.category}
-                    onClick={() => openModal(
-                      `Skill Evidence: ${skill.name}`,
-                      `• Verification Status: ${skill.status}\n• Evidence Sources: ${skill.evidence}\n• Confidence Score: ${skill.percentage}%\n• Evaluation: Verified through coursework, test case submissions, and laboratory attestations.`
-                    )}
-                  />
-                ))}
-              </div>
-            )}
+            <SkillPassportWidget
+              summary={studentData?.skillPassportSummary}
+              skills={skills}
+              onOpenModal={openModal}
+            />
           </Card>
 
           {/* Student Career Journey */}

@@ -1,6 +1,6 @@
 from app.models.user import User, StudentProfile, FacultyProfile, AdminProfile, Role
 from app.models.department import Department, Course, Subject
-from app.models.skill import Skill, StudentSkill, SkillGap
+from app.models.skill import Skill, UserSkill, SkillEvidence, SkillVerification, SkillProgressHistory, StudentSkill, SkillGap
 from app.models.project import Project, ProjectTechnology
 from app.models.resume import Resume, ResumeAnalysis
 from app.models.github import GithubProfile, GithubRepository, GitHubProfile

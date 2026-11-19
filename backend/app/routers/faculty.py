@@ -1,16 +1,47 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models.skill import Skill
+from app.models.user import User
 
 router = APIRouter(prefix="/faculty", tags=["Faculty"])
 
 @router.get("/dashboard")
-def get_faculty_dashboard():
+def get_faculty_dashboard(db: Session = Depends(get_db)):
+    # Check actual pending skill verification requests in database
+    pending_skills = (
+        db.query(Skill)
+        .filter(Skill.status.in_(["Pending Review", "Evidence Submitted"]))
+        .order_by(Skill.updated_at.desc())
+        .all()
+    )
+
+    pending_queue = []
+    for s in pending_skills:
+        student = db.query(User).filter(User.id == s.user_id).first()
+        pending_queue.append({
+            "skill_id": s.id,
+            "student_name": student.name if student else "Student",
+            "student_degree": student.degree or "B.Tech CSE",
+            "skill_name": s.name,
+            "category": s.category,
+            "proficiency_level": s.proficiency_level,
+            "percentage": s.percentage,
+            "status": s.status,
+            "evidence_count": len(s.evidences or []),
+            "time": "Recently"
+        })
+
+    pending_count = len(pending_skills)
+
     return {
         "stats": {
             "total_students": 142,
             "batches_assigned": 3,
             "avg_skill_confidence": "81%",
             "placement_ready_pct": "76%",
-            "pending_viva_reviews": 6
+            "pending_viva_reviews": max(pending_count, 6),
+            "pending_skill_verifications": pending_count
         },
         "assigned_classes": [
             {"subject": "Design & Analysis of Algorithms", "code": "CS-301", "batch": "CSE 3rd Year - A", "students": 58, "avg_score": "84%"},
@@ -23,9 +54,10 @@ def get_faculty_dashboard():
             {"student": "Ananya Roy", "topic": "Relational Indexing Lab", "status": "Verified", "time": "1 day ago", "xp": "+90 XP"},
             {"student": "Karan Mehta", "topic": "ML Regression Pipeline", "status": "Action Required", "time": "2 days ago", "xp": "+150 XP"}
         ],
+        "pending_skill_verifications": pending_queue,
         "curriculum_recommendations": [
             "Increase practical lab assignments on Dynamic Programming for CS-301.",
             "Schedule guest seminar on Production ML Pipelines for CS-504.",
-            "Verify remaining 6 viva submissions before weekly deadline."
+            f"Review remaining {max(pending_count, 1)} student skill verification request(s) before weekly audit."
         ]
     }

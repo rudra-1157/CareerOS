@@ -1,11 +1,22 @@
 import axios from 'axios';
 
-let rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
-rawBaseUrl = rawBaseUrl.trim().replace(/\/+$/, '');
-if (!rawBaseUrl.endsWith('/api/v1')) {
-  rawBaseUrl = `${rawBaseUrl}/api/v1`;
-}
-const API_BASE_URL = rawBaseUrl;
+const getApiBaseUrl = () => {
+  let url = import.meta.env.VITE_API_BASE_URL;
+  if (!url) {
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      url = 'http://127.0.0.1:8000/api/v1';
+    } else {
+      url = 'https://careeros-api.embarko.app/api/v1';
+    }
+  }
+  url = url.trim().replace(/\/+$/, '');
+  if (!url.endsWith('/api/v1')) {
+    url = `${url}/api/v1`;
+  }
+  return url;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -267,6 +278,38 @@ export const passportService = {
   },
   addSkill: async (payload) => {
     const response = await apiClient.post('/passport/skills', payload);
+    return response.data;
+  },
+  getSkillDetails: async (skillId) => {
+    const response = await apiClient.get(`/passport/skills/${skillId}`);
+    return response.data;
+  },
+  updateSkill: async (skillId, payload) => {
+    const response = await apiClient.put(`/passport/skills/${skillId}`, payload);
+    return response.data;
+  },
+  deleteSkill: async (skillId) => {
+    const response = await apiClient.delete(`/passport/skills/${skillId}`);
+    return response.data;
+  },
+  addEvidence: async (skillId, payload) => {
+    const response = await apiClient.post(`/passport/skills/${skillId}/evidence`, payload);
+    return response.data;
+  },
+  deleteEvidence: async (skillId, evidenceId) => {
+    const response = await apiClient.delete(`/passport/skills/${skillId}/evidence/${evidenceId}`);
+    return response.data;
+  },
+  requestVerification: async (skillId) => {
+    const response = await apiClient.post(`/passport/skills/${skillId}/request-verification`);
+    return response.data;
+  },
+  getPendingVerifications: async () => {
+    const response = await apiClient.get('/passport/faculty/pending-verifications');
+    return response.data;
+  },
+  verifySkill: async (skillId, payload) => {
+    const response = await apiClient.post(`/passport/skills/${skillId}/verify`, payload);
     return response.data;
   }
 };

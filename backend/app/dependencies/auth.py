@@ -72,3 +72,12 @@ def require_admin(current_user: User = Depends(require_active_user)) -> User:
     if current_user.role != Role.ADMINISTRATOR.value:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions. Administrator role required.")
     return current_user
+
+def require_faculty_or_admin(current_user: User = Depends(require_active_user)) -> User:
+    role_str = str(current_user.role or "").strip().upper()
+    if role_str not in [Role.FACULTY.value, Role.ADMINISTRATOR.value, "FACULTY", "ADMINISTRATOR", "ADMIN"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only authorized faculty members or administrators can perform this verification action."
+        )
+    return current_user

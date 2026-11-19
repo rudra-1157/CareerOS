@@ -16,7 +16,7 @@ import {
   Clock,
   ArrowUpRight
 } from 'lucide-react';
-import { facultyService } from '../services/api';
+import { facultyService, passportService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/common/Card';
 import StatCard from '../components/common/StatCard';
@@ -52,6 +52,7 @@ const FacultyDashboardPage = () => {
   });
 
   const [submissions, setSubmissions] = useState(dashboardData.recent_submissions);
+  const [pendingSkills, setPendingSkills] = useState([]);
   const [successToast, setSuccessToast] = useState('');
 
   useEffect(() => {
@@ -63,7 +64,28 @@ const FacultyDashboardPage = () => {
         }
       }
     });
+
+    passportService.getPendingVerifications().then((res) => {
+      if (res && res.queue) {
+        setPendingSkills(res.queue);
+      }
+    }).catch(() => {});
   }, []);
+
+  const handleVerifySkill = async (skillId, studentName, action) => {
+    try {
+      await passportService.verifySkill(skillId, {
+        action: action,
+        comments: action === 'APPROVED' ? 'Attested by faculty guide based on repository evidence and viva evaluation.' : 'Needs additional lab work.',
+        rejection_reason: action === 'REJECTED' ? 'Insufficient evidence' : ''
+      });
+      setPendingSkills(prev => prev.filter(s => s.skill_id !== skillId));
+      setSuccessToast(`Skill attestation decision saved for ${studentName}: ${action}`);
+      setTimeout(() => setSuccessToast(''), 3500);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleApprove = (index, studentName) => {
     setSubmissions((prev) =>
@@ -239,6 +261,80 @@ const FacultyDashboardPage = () => {
                 </tbody>
               </table>
             </div>
+          </Card>
+
+          {/* Skill Passport Attestation Queue */}
+          <Card 
+            title="Skill Passport Attestation Queue" 
+            subtitle="Student technical skills awaiting official faculty attestation and repository audit"
+          >
+            {pendingSkills.length === 0 ? (
+              <div className="py-6 text-center text-xs text-slate-500">
+                No pending skill passport submissions awaiting review. All student skills are up to date!
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
+                      <th className="pb-2.5">Student</th>
+                      <th className="pb-2.5">Skill & Domain</th>
+                      <th className="pb-2.5">Level</th>
+                      <th className="pb-2.5">Evidence</th>
+                      <th className="pb-2.5 text-right">Faculty Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {pendingSkills.map((ps) => (
+                      <tr key={ps.skill_id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                        <td className="py-3 font-semibold text-slate-900 dark:text-white">
+                          {ps.student_name}
+                          <span className="block text-[10px] text-slate-400 font-normal">{ps.student_degree}</span>
+                        </td>
+                        <td className="py-3">
+                          <span className="font-bold text-blue-600 dark:text-blue-400 block">{ps.skill_name}</span>
+                          <span className="text-[10px] text-slate-400">{ps.category}</span>
+                        </td>
+                        <td className="py-3 font-medium">
+                          {ps.proficiency_level} ({ps.percentage}%)
+                        </td>
+                        <td className="py-3 text-slate-600 dark:text-slate-300">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-200">
+                            <FileCheck className="w-3.5 h-3.5 text-slate-400" />
+                            {ps.evidence_count} Record{ps.evidence_count !== 1 ? 's' : ''}
+                          </span>
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="inline-flex items-center gap-1.5 justify-end">
+                            <button
+                              onClick={() => handleVerifySkill(ps.skill_id, ps.student_name, 'APPROVED')}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                              title="Approve and endorse skill"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleVerifySkill(ps.skill_id, ps.student_name, 'NEEDS_IMPROVEMENT')}
+                              className="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                              title="Request additional evidence"
+                            >
+                              Improve
+                            </button>
+                            <button
+                              onClick={() => handleVerifySkill(ps.skill_id, ps.student_name, 'REJECTED')}
+                              className="px-2 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                              title="Reject attestation"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </div>
 

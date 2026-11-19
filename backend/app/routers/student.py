@@ -12,10 +12,16 @@ from app.models.social import Friendship, CodingBattle
 from app.schemas.user import StudentProfileUpdate
 from app.services.student_service import get_student_dashboard_data
 
+import tempfile
+
 router = APIRouter(prefix="/student", tags=["Student"])
 
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "avatars")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+_data_dir = os.environ.get("DATA_DIR") or tempfile.gettempdir()
+UPLOAD_DIR = os.path.join(_data_dir, "careeros_uploads", "avatars")
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+except Exception:
+    pass
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB

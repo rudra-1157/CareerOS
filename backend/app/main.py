@@ -26,32 +26,31 @@ from app.routers import (
 from app.database import engine, Base, SessionLocal
 from app.routers.auth import seed_demo_users_if_needed
 from app.data.company_seed import seed_companies_and_jobs
+from app.utils.migrate_passport import run_passport_migrations
 
-# Create tables on startup and seed demo users
-Base.metadata.create_all(bind=engine)
-
-# --- Inline migration: add columns that may be missing on existing DBs ---
-_migrations = [
-    "ALTER TABLE github_profiles ADD COLUMN last_synced_at DATETIME",
-    "ALTER TABLE github_profiles ADD COLUMN bio TEXT",
-    "ALTER TABLE github_profiles ADD COLUMN avatar_url TEXT",
-    "ALTER TABLE skills ADD COLUMN confidence TEXT",
-    "ALTER TABLE skills ADD COLUMN level TEXT",
-    "ALTER TABLE skills ADD COLUMN verified_date TEXT",
-]
-for _sql in _migrations:
-    try:
-        with engine.connect() as _conn:
-            _conn.execute(text(_sql))
-            _conn.commit()
-    except Exception:
-        pass  # column already exists — safe to ignore
-
+# Create tables on startup, run migrations, and seed demo records
 try:
+    Base.metadata.create_all(bind=engine)
+    run_passport_migrations()
+
+    # Additional inline migrations for github profiles
+    _migrations = [
+        "ALTER TABLE github_profiles ADD COLUMN last_synced_at DATETIME",
+        "ALTER TABLE github_profiles ADD COLUMN bio TEXT",
+        "ALTER TABLE github_profiles ADD COLUMN avatar_url TEXT",
+    ]
+    for _sql in _migrations:
+        try:
+            with engine.connect() as _conn:
+                _conn.execute(text(_sql))
+                _conn.commit()
+        except Exception:
+            pass
+
     with SessionLocal() as _db_init:
         seed_demo_users_if_needed(_db_init)
-except Exception:
-    pass
+except Exception as e:
+    print(f"DB init warning: {e}")
 
 try:
     with SessionLocal() as _db_seed:
@@ -68,16 +67,21 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
-    allow_origin_regex=r"https?://.*(vercel\.app|onrender\.com|localhost|127\.0\.0\.1).*",
+    allow_origin_regex=r"https?://.*(vercel\.app|onrender\.com|embarko\.app|localhost|127\.0\.0\.1).*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Ensure uploads directory exists and mount static route
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
-os.makedirs(os.path.join(UPLOAD_DIR, "avatars"), exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+import tempfile
+_data_dir = os.environ.get("DATA_DIR") or tempfile.gettempdir()
+UPLOAD_DIR = os.path.join(_data_dir, "careeros_uploads")
+try:
+    os.makedirs(os.path.join(UPLOAD_DIR, "avatars"), exist_ok=True)
+except Exception:
+    pass
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR, check_dir=False), name="uploads")
 
 app.include_router(auth_router,          prefix=settings.API_V1_STR)
 app.include_router(student_router,       prefix=settings.API_V1_STR)

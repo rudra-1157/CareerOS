@@ -50,15 +50,15 @@ export const CareerProvider = ({ children }) => {
           stats: data.stats
             ? {
                 learning_xp: data.stats.learning_xp ?? 0,
-                xp_this_week: `+${data.stats.xp_this_week ?? 0} this week`,
-                skill_confidence: `${data.stats.skill_confidence ?? 0}%`,
-                skill_subtitle: "Evidence-based profile",
-                career_readiness: `${data.stats.career_readiness ?? 0}%`,
-                career_subtitle: `Target: ${data.student?.target_role || "Not set"}`,
+                xp_this_week: typeof data.stats.xp_this_week === 'string' ? data.stats.xp_this_week : `+${data.stats.xp_this_week ?? 0} this week`,
+                skill_confidence: String(data.stats.skill_confidence ?? '0%').includes('%') ? data.stats.skill_confidence : `${data.stats.skill_confidence}%`,
+                skill_subtitle: data.stats.skill_subtitle || "Evidence-based profile",
+                career_readiness: String(data.stats.career_readiness ?? '0%').includes('%') ? data.stats.career_readiness : `${data.stats.career_readiness}%`,
+                career_subtitle: data.stats.career_subtitle || `Target: ${data.student?.target_role || "Not set"}`,
                 streak_days: `${data.stats.streak_days ?? 0}`,
                 streak_subtitle: "days continuous practice",
-                coding_score: `${data.stats.coding_score ?? 0}%`,
-                interview_readiness: `${data.stats.interview_readiness ?? 0}%`,
+                coding_score: String(data.stats.coding_score ?? '0%').includes('%') ? data.stats.coding_score : `${data.stats.coding_score}%`,
+                interview_readiness: String(data.stats.interview_readiness ?? '0%').includes('%') ? data.stats.interview_readiness : `${data.stats.interview_readiness}%`,
                 verified_projects: data.stats.verified_projects ?? 0,
                 assessments_completed: data.stats.assessments_completed ?? 0,
               }
@@ -66,6 +66,9 @@ export const CareerProvider = ({ children }) => {
 
           // Real skills from DB (empty array = show empty state)
           skills: Array.isArray(data.skills) ? data.skills : prev.skills,
+
+          // Skill Passport summary for dashboard widget
+          skillPassportSummary: data.skill_passport_summary || null,
 
           // Journey steps if provided
           journeySteps: Array.isArray(data.journey_steps) ? data.journey_steps : prev.journeySteps,
